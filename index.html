@@ -1112,10 +1112,10 @@
        DATA
        ========================================================================= */
 
-    const SUSPECTS = ["Clara", "Nono", "Gema", "María", "Victoria", "Inma", "Raquel", "Alicia", "Cris", "Mario"];
+    const SUSPECTS = ["Clara", "Nono", "Gema", "María", "Victoria", "Inma", "Raquel", "Alicia", "Cris", "Mario", "Jose"];
     const SUSPECT_CODES = {
       "Gema": "GE", "María": "MA", "Victoria": "VI", "Nono": "NO", "Inma": "IN",
-      "Raquel": "RA", "Alicia": "AL", "Cris": "CR", "Mario": "MR"
+      "Raquel": "RA", "Alicia": "AL", "Cris": "CR", "Mario": "MR", "Jose": "JO", "Clara": "CL"
     };
     const SUSPECT_COLORS = {
       "Clara": "#5c7a8a",
@@ -1127,18 +1127,14 @@
       "Raquel": "#d7b899",
       "Alicia": "#184478",
       "Cris": "#bd5b3d",
-      "Mario": "#d29a43"
+      "Mario": "#d29a43",
+      "Jose": "#bf928d"
     };
     const VICTIMS = [
-      { id: "jose", name: "Jose", emoji: "💀", found: "hallado", pronoun: "él" },
-      { id: "mocca", name: "Mocca", emoji: "🐾", found: "hallada", pronoun: "ella" }
-    ];
+  { id: "mocca", name: "Mocca", emoji: "🐾", found: "hallada", pronoun: "ella" }
+];
     function nextVictim() {
-      let idx = parseInt(localStorage.getItem('Murdocca_victim_turn') || '0', 10);
-      if (isNaN(idx)) idx = 0;
-      const v = VICTIMS[idx % VICTIMS.length];
-      localStorage.setItem('Murdocca_victim_turn', String(idx + 1));
-      return v;
+      return VICTIMS[0];
     }
     function personLabel(name) {
       if (puzzle && puzzle.victim && name === puzzle.victim.name) return puzzle.victim.emoji;
@@ -1146,30 +1142,46 @@
     }
 
 
-
-    const MAPS = [
-      {
-        id: "cafe", emoji: "🚂", name: "CAF",
-        desc: "",
-        rooms: ["la sala de juntas", "el departamento de diseño", "la sala de maquetas", "la mazmorra de Pedro el informático", "la recepción", "la cafetería"],
-        obstacles: ["🧽 el trapo sucio de las limpiadoras", "🚇 la maqueta del tranvía de Granada", "🗄️ el archivador", "📓 los planos de Reichshoffen", "🎄 el arbol de navidad", "👩🏻 Maite", "👧🏽 la niña mala", "🥤 la máquina de café"],
-        features: ["🚽 el retrete sin agua", "🗺️ el mapa del Cairo", "☕ el café del Vander", "🪑 la silla", "📋 el despido de maite", "🔋 las pilas robadas"]
-      },
-      {
-        id: "dental", emoji: "🦷", name: "Moradent",
-        desc: "",
-        rooms: ["la sala de espera", "la consulta", "el baño", "el salon de Gema", "el laboratorio", "el almacén", "el recibidor"],
-        obstacles: ["🎃 manta de stranger things", "🛕 un buddha","☢️ la máquina de rayos X", "🗄️ el archivador", "🔱 un cuerno de ciervo", "✂ las tijeras (de D.C)", "📦 la caja de kemphor"],
-        features: ["🗒 los post-its del hada", "🪑 la silla", "🖼️ el póster de Gongo", "🦯 el látigo del señor Moles", "🔬 el microscopio del señor Moles", "🛏️ la camilla"]
-      },
-      {
-        id: "lab", emoji: "🧪", name: "Laboratorio de edafología",
-        desc: "",
-        rooms: ["la sala de muestras", "la cámara frigorífica", "la sala de análisis", "la oficina de María", "el almacén", "la sala de incubación"],
-        obstacles: ["🦽 la barbie negra", "🧊 el congelador", "🦕 Stifen", "🧯 el extintor", "🌱 el poto", "🥚 la incubadora", "📚 los libros del National Geographic", "👱🏻‍♀️ Ana"],
-        features: ["🌀 la centrifugadora", "💻 el escritorio", "🥼 la bata", "🔬 el microscopio", "🚿 la pileta", "📋 los apuntes", "📷 la polaroid", "👽 el smiski"]
-      }
-    ];
+const MAPS = [
+  {
+    id: "cafe", emoji: "🚂", name: "CAF",
+    desc: "",
+    rooms: [
+      { name: "la sala de juntas", obstacles: ["🚇 la maqueta del tranvía de Granada", "🎄 el arbol de navidad"], features: ["🪑 la silla", "🗺️ el mapa del Cairo"] },
+      { name: "el departamento de diseño", obstacles: ["📓 los planos de Reichshoffen", "🗄️ el archivador"], features: ["📋 el despido de maite", "🪑 la silla"] },
+      { name: "la sala de maquetas", obstacles: ["🚇 la maqueta del tranvía de Granada"], features: ["🗺️ el mapa del Cairo"] },
+      { name: "la mazmorra de Pedro el informático", obstacles: ["👧🏽 la niña mala"], features: ["🔋 las pilas robadas"] },
+      { name: "la recepción", obstacles: ["👩🏻 Maite", "🗄️ el archivador"], features: ["🪑 la silla"] },
+      { name: "la cafetería", obstacles: ["🥤 la máquina de café", "🧽 el trapo sucio de las limpiadoras"], features: ["☕ el café del Vander"] },
+      { name: "el baño", obstacles: ["🧽 el trapo sucio de las limpiadoras"], features: ["🚽 el retrete sin agua"] }
+    ]
+  },
+  {
+    id: "dental", emoji: "🦷", name: "Moradent",
+    desc: "",
+    rooms: [
+      { name: "la sala de espera", obstacles: ["🎃 manta de stranger things", "🛕 un buddha"], features: ["🪑 la silla", "🖼️ el póster de Gongo"] },
+      { name: "la consulta", obstacles: ["☢️ la máquina de rayos X"], features: ["🛏️ la camilla"] },
+      { name: "el baño", obstacles: ["📦 la caja de kemphor"], features: ["🪑 la silla"] },
+      { name: "el salon de Gema", obstacles: ["🔱 un cuerno de ciervo", "🗄️ el archivador"], features: ["🖼️ el póster de Gongo"] },
+      { name: "el laboratorio", obstacles: ["✂ las tijeras (de D.C)", "☢️ la máquina de rayos X"], features: ["🔬 el microscopio del señor Moles", "🦯 el látigo del señor Moles"] },
+      { name: "el almacén", obstacles: ["📦 la caja de kemphor", "🗄️ el archivador"], features: ["🗒 los post-its del hada"] },
+      { name: "el recibidor", obstacles: ["🛕 un buddha"], features: ["🗒 los post-its del hada", "🪑 la silla"] }
+    ]
+  },
+  {
+    id: "lab", emoji: "🧪", name: "Laboratorio de edafología",
+    desc: "",
+    rooms: [
+      { name: "la sala de muestras", obstacles: ["🦽 la barbie negra"], features: ["🌀 la centrifugadora", "🔬 el microscopio"] },
+      { name: "la cámara frigorífica", obstacles: ["🧊 el congelador"], features: ["🥼 la bata"] },
+      { name: "la sala de análisis", obstacles: ["🦕 Stifen"], features: ["🚿 la pileta", "🔬 el microscopio"] },
+      { name: "la oficina de María", obstacles: ["👱🏻‍♀️ Ana", "📚 los libros del National Geographic"], features: ["💻 el escritorio", "📋 los apuntes"] },
+      { name: "el almacén", obstacles: ["🧯 el extintor", "🌱 el poto"], features: ["👽 el smiski", "📷 la polaroid"] },
+      { name: "la sala de incubación", obstacles: ["🥚 la incubadora"], features: ["🌀 la centrifugadora"] }
+    ]
+  }
+];
 
     const DIFFICULTIES = [
       { id: "facil", name: "Fácil", n: 5, size: 6, types: ["pin", "room", "feature", "beside"], desc: "" },
@@ -1442,12 +1454,29 @@
       const size = diff.size;
       const N = diff.n;
       const suspects = shuffle(SUSPECTS).slice(0, N);
-      const { roomGrid, roomList, roomRects } = buildRooms(size, mapDef.rooms);
+
+      // Extraer nombres de salas (funciona tanto si mapDef.rooms son strings como si son objetos)
+      const roomNames = mapDef.rooms.map(r => typeof r === 'string' ? r : r.name);
+      const { roomGrid, roomList, roomRects } = buildRooms(size, roomNames);
+
+      // Auxiliares para consultar objetos/rasgos de la sala según la casilla
+      const getRoomObj = (rIdx) => mapDef.rooms[rIdx % mapDef.rooms.length];
+      const getRoomObsList = (rIdx) => {
+        const room = getRoomObj(rIdx);
+        return (room && room.obstacles) ? room.obstacles : (mapDef.obstacles || []);
+      };
+      const getRoomFeatList = (rIdx) => {
+        const room = getRoomObj(rIdx);
+        return (room && room.features) ? room.features : (mapDef.features || []);
+      };
 
       // Listas de objetos únicos obligatorios (con sus emojis exactos)
       const GUARANTEED_OBS = ["👧🏽 la niña mala", "👩🏻 Maite", "🛎️ mostrador de recepción", "✂ tijeras (de D.C)", "🦽 barbie negra", "🦕 Stifen", "👱🏻‍♀️ Ana", "🎃 manta de stranger things", "✂ las tijeras (de D.C)"];
-      const GUARANTEED_FEAT = ["📋 despido de maite", "🖼️ póster de Gongo", "🔬 microscopio del señor Moles",  "📷 la polaroid", "👽 el smiski", "🦯 el látigo del señor Moles"];
+      const GUARANTEED_FEAT = ["📋 despido de maite", "🖼️ póster de Gongo", "🔬 microscopio del señor Moles", "📷 la polaroid", "👽 el smiski", "🦯 el látigo del señor Moles"];
 
+      // Recopilar todos los obstáculos y rasgos disponibles en las salas de ESTE mapa
+      const allMapObstacles = [...new Set(mapDef.rooms.flatMap(r => typeof r === 'object' && r.obstacles ? r.obstacles : (mapDef.obstacles || [])))];
+      const allMapFeatures = [...new Set(mapDef.rooms.flatMap(r => typeof r === 'object' && r.features ? r.features : (mapDef.features || [])))];
 
       // --- OBSTÁCULOS ---
       const obstacle = Array.from({ length: size }, () => Array(size).fill(null));
@@ -1456,10 +1485,9 @@
       let placedObs = 0;
 
       // Filtrar cuáles obligatorios y cuáles normales hay en ESTE mapa
-      const mapGuaranteedObs = mapDef.obstacles.filter(o => GUARANTEED_OBS.includes(o));
-      const normalObs = mapDef.obstacles.filter(o => !GUARANTEED_OBS.includes(o));
+      const mapGuaranteedObs = allMapObstacles.filter(o => GUARANTEED_OBS.includes(o));
 
-      // 1º Colocar los obstáculos obligatorios (sí o sí, una sola vez)
+      // 1º Colocar los obstáculos obligatorios (sí o sí, una sola vez, priorizando su habitación temática)
       for (const obs of mapGuaranteedObs) {
         let placed = false;
         let localGuard = 0;
@@ -1467,27 +1495,34 @@
           localGuard++;
           const r = rnd(size), c = rnd(size);
           if (!obstacle[r][c]) {
-            obstacle[r][c] = obs;
-            placed = true;
-            placedObs++;
+            const allowedObs = getRoomObsList(roomGrid[r][c]);
+            // Coloca si pertenece a esta sala o si lleva más de 500 intentos (fallback de seguridad)
+            if (allowedObs.includes(obs) || localGuard > 500) {
+              obstacle[r][c] = obs;
+              placed = true;
+              placedObs++;
+            }
           }
         }
       }
 
-      // 2º Rellenar el resto de la densidad con obstáculos normales (máximo 3 por tipo)
+      // 2º Rellenar el resto de la densidad con obstáculos normales según su habitación (máx 3 por tipo)
       const obsCounts = {};
       let guardObs = 0;
       while (placedObs < obstacleCount && guardObs < 5000) {
         guardObs++;
         const r = rnd(size), c = rnd(size);
         if (!obstacle[r][c]) {
-          const candidate = normalObs[rnd(normalObs.length)];
-          const currentCount = obsCounts[candidate] || 0;
+          const roomObs = getRoomObsList(roomGrid[r][c]).filter(o => !GUARANTEED_OBS.includes(o));
+          if (roomObs.length > 0) {
+            const candidate = roomObs[rnd(roomObs.length)];
+            const currentCount = obsCounts[candidate] || 0;
 
-          if (currentCount < 3) {
-            obstacle[r][c] = candidate;
-            obsCounts[candidate] = currentCount + 1;
-            placedObs++;
+            if (currentCount < 3) {
+              obstacle[r][c] = candidate;
+              obsCounts[candidate] = currentCount + 1;
+              placedObs++;
+            }
           }
         }
       }
@@ -1495,42 +1530,69 @@
       // --- RASGOS (FEATURES) ---
       const feature = Array.from({ length: size }, () => Array(size).fill(null));
       const freeCells = [];
-      for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (!obstacle[r][c]) freeCells.push([r, c]);
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (!obstacle[r][c]) freeCells.push([r, c]);
+        }
+      }
 
       const featCount = Math.floor(freeCells.length * 0.18);
       const shuffledFree = shuffle(freeCells);
       let placedFeat = 0;
 
-      // Filtrar cuáles obligatorios y cuáles normales hay en ESTE mapa
-      const mapGuaranteedFeat = mapDef.features.filter(f => GUARANTEED_FEAT.includes(f));
-      const normalFeat = mapDef.features.filter(f => !GUARANTEED_FEAT.includes(f));
+      // Filtrar cuáles obligatorios hay en ESTE mapa
+      const mapGuaranteedFeat = allMapFeatures.filter(f => GUARANTEED_FEAT.includes(f));
 
-      // 1º Colocar los rasgos obligatorios
+      // 1º Colocar los rasgos obligatorios (priorizando su habitación temática)
       for (const feat of mapGuaranteedFeat) {
-        if (placedFeat < shuffledFree.length) {
-          const [r, c] = shuffledFree[placedFeat];
-          feature[r][c] = feat;
-          placedFeat++;
+        let placed = false;
+        for (let i = 0; i < shuffledFree.length; i++) {
+          const [r, c] = shuffledFree[i];
+          if (!feature[r][c]) {
+            const allowedFeat = getRoomFeatList(roomGrid[r][c]);
+            if (allowedFeat.includes(feat)) {
+              feature[r][c] = feat;
+              placed = true;
+              placedFeat++;
+              break;
+            }
+          }
+        }
+        // Fallback: si no encajó en su sala temática por falta de espacio, lo coloca en cualquier casilla libre
+        if (!placed && placedFeat < shuffledFree.length) {
+          for (let i = 0; i < shuffledFree.length; i++) {
+            const [r, c] = shuffledFree[i];
+            if (!feature[r][c]) {
+              feature[r][c] = feat;
+              placedFeat++;
+              break;
+            }
+          }
         }
       }
 
-      // 2º Rellenar el resto de la densidad con rasgos normales (máximo 3 por tipo)
+      // 2º Rellenar el resto de rasgos según la habitación de la casilla (máx 3 por tipo)
       const featCounts = {};
-      let freeIdx = placedFeat;
+      let freeIdx = 0;
       while (placedFeat < featCount && freeIdx < shuffledFree.length) {
         const [r, c] = shuffledFree[freeIdx];
         freeIdx++;
+        if (feature[r][c]) continue; // casilla ya ocupada por rasgo obligatorio
 
-        const candidate = normalFeat[rnd(normalFeat.length)];
-        const currentCount = featCounts[candidate] || 0;
+        const roomFeats = getRoomFeatList(roomGrid[r][c]).filter(f => !GUARANTEED_FEAT.includes(f));
+        if (roomFeats.length > 0) {
+          const candidate = roomFeats[rnd(roomFeats.length)];
+          const currentCount = featCounts[candidate] || 0;
 
-        if (currentCount < 3) {
-          feature[r][c] = candidate;
-          featCounts[candidate] = currentCount + 1;
-          placedFeat++;
+          if (currentCount < 3) {
+            feature[r][c] = candidate;
+            featCounts[candidate] = currentCount + 1;
+            placedFeat++;
+          }
         }
       }
 
+      // --- ASIGNACIÓN ÚNICA DE PERSONAJES (EJE X E Y DIVERSOS) ---
       const rowsAvail = shuffle([...Array(size).keys()]);
       const colsAvail = shuffle([...Array(size).keys()]);
       const solution = {}; // suspect -> {r,c}
@@ -1539,8 +1601,10 @@
       function backtrack(i) {
         if (i >= suspects.length) return true;
         const s = suspects[i];
+        // Filtra para usar solo filas (eje Y) que NO se hayan usado ya
         const rowsShuffled = shuffle(rowsAvail.filter(r => !usedRows.has(r)));
         for (const r of rowsShuffled) {
+          // Filtra para usar solo columnas (eje X) que NO se hayan usado ya
           const colsShuffled = shuffle(colsAvail.filter(c => !usedCols.has(c)));
           for (const c of colsShuffled) {
             if (obstacle[r][c]) continue;
@@ -1557,7 +1621,7 @@
       const unusedRow = [...Array(size).keys()].find(r => !usedRows.has(r));
       const unusedCol = [...Array(size).keys()].find(c => !usedCols.has(c));
       if (unusedRow === undefined || unusedCol === undefined) return null;
-      if (obstacle[unusedRow][unusedCol]) return null; // victim can't be on obstacle, retry
+      if (obstacle[unusedRow][unusedCol]) return null; // La víctima no puede aparecer sobre un obstáculo
 
       const victimCell = { r: unusedRow, c: unusedCol };
       const victimRoom = roomGrid[victimCell.r][victimCell.c];
@@ -2189,21 +2253,54 @@ function hexAlpha(hex, alpha) {
       }
     }
 
-    function lockCell(r, c) {
+function lockCell(r, c) {
       if (mode !== 'place' || !activeSuspect) return;
       const key = `${r},${c}`;
-      takeSnapshot();
+
+      // 1. Si la casilla ya está fijada por este mismo personaje, la desbloqueamos
       if (userLocked.get(key) === activeSuspect) {
+        takeSnapshot();
         userLocked.delete(key);
         armedCell = null;
         renderBoard();
         return;
       }
+
+      // 2. VALIDACIÓN: Comprobar si ya hay OTRO personaje en la misma fila (eje Y) o columna (eje X)
+      for (const [lockedKey, lockedName] of userLocked.entries()) {
+        if (lockedName === activeSuspect) continue; // Ignoramos la posición anterior del propio personaje
+
+        const [lr, lc] = lockedKey.split(',').map(Number);
+        if (lr === r || lc === c) {
+          const eje = lr === r ? 'la misma fila (eje Y)' : 'la misma columna (eje X)';
+          const fb = document.getElementById('feedback');
+          if (fb) {
+            fb.innerHTML = `<div class="feedback bad">¡Imposible! ${lockedName} ya está en ${eje}.</div>`;
+            setTimeout(() => { fb.innerHTML = ''; }, 3000);
+          }
+
+          // --- Hacer vibrar la casilla del personaje que genera el conflicto ---
+          const conflictingCell = document.querySelector(`.cell[data-key="${lr},${lc}"]`);
+          if (conflictingCell) {
+            conflictingCell.classList.remove('shake');
+            void conflictingCell.offsetWidth; // Forzar reflow para reanimar si se toca varias veces
+            conflictingCell.classList.add('shake');
+            setTimeout(() => conflictingCell.classList.remove('shake'), 400);
+          }
+
+          return; // Cancela el bloqueo
+        }
+      }
+
+      // 3. Si la posición es válida, fijamos al personaje
+      takeSnapshot();
       clearExistingLockOf(activeSuspect);
       userLocked.set(key, activeSuspect);
       userNotes.delete(key);
       userCross.delete(key);
       armedCell = null;
+
+      // 4. Marca automáticamente con ✕ el resto de casillas libres de su fila y columna
       for (let cc = 0; cc < puzzle.size; cc++) {
         if (cc === c || puzzle.obstacle[r][cc]) continue;
         const k2 = `${r},${cc}`;
@@ -2330,9 +2427,46 @@ function cellClick(r, c) {
         d.appendChild(header);
         const lines = document.createElement('div');
         lines.className = 'clue-lines';
-        lines.innerHTML = texts.length
-          ? texts.map(t => `<div class="clue-line">${t}</div>`).join('')
-          : `<div class="clue-line clue-line-empty">Sin pistas directas — descártalo por eliminación.</div>`;
+        
+        if (texts.length === 0) {
+          lines.innerHTML = `<div class="clue-line clue-line-empty">Sin pistas directas — descártalo por eliminación.</div>`;
+        } else {
+          // Agrupar pistas que empiecen con "[Nombre] estuvo " para concatenarlas
+          const prefix = `${name} estuvo `;
+          const combinableClues = [];
+          const otherClues = [];
+
+          texts.forEach(t => {
+            if (t.startsWith(prefix)) {
+              // Quitamos el prefijo y el punto final para unirlas limpiamente
+              combinableClues.push(t.substring(prefix.length).replace(/\.$/, ''));
+            } else {
+              otherClues.push(t);
+            }
+          });
+
+          let resultHTML = "";
+
+          // Unir las pistas combinables con comas y la conjunción "y"
+          if (combinableClues.length > 0) {
+            let combinedSentence = prefix;
+            if (combinableClues.length === 1) {
+              combinedSentence += combinableClues[0];
+            } else {
+              const last = combinableClues.pop();
+              combinedSentence += combinableClues.join(", ") + " y " + last;
+            }
+            resultHTML += `<div class="clue-line">${combinedSentence}.</div>`;
+          }
+
+          // Añadir cualquier otra pista que tenga una estructura diferente (ej. "Según los testigos...")
+          otherClues.forEach(oc => {
+            resultHTML += `<div class="clue-line">${oc}</div>`;
+          });
+
+          lines.innerHTML = resultHTML;
+        }
+        
         d.appendChild(lines);
         d.onclick = () => selectPerson(name);
         list.appendChild(d);
