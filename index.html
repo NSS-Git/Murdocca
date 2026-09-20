@@ -804,6 +804,19 @@
       box-shadow: 0 0 0 1px var(--blood);
     }
 
+    .clue-card.clue-disabled {
+      opacity: 0.45;
+      filter: grayscale(80%);
+      background-color: #f0f0f0;
+      border-color: #ccc;
+      transition: all 0.3s ease;
+    }
+
+    /* Opcional: mantiene el avatar con un toque visible */
+    .clue-card.clue-disabled img {
+      opacity: 0.7;
+    }
+
     .card-header {
       display: flex;
       align-items: center;
@@ -972,8 +985,8 @@
       }
 
       .mobile-top {
-        flex: 0 0 50%;
-        height: 50%;
+        flex: 0 0 75%;
+        height: 75%;
         min-height: 0;
         display: flex;
         flex-direction: column;
@@ -992,8 +1005,8 @@
       }
 
       .mobile-bottom {
-        flex: 1 1 50%;
-        height: 50%;
+        flex: 0 0 25%;
+        height: 25%;
         min-height: 0;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
@@ -1082,9 +1095,11 @@
           <button class="mode-btn" id="modeCross">✕ Marcar</button>
           <button class="mode-btn" id="undoBtn" disabled>↩ Deshacer</button>
         </div>
-        <div class="hint-text">Toca la tarjeta de un personaje (o de la víctima) para seleccionarlo, y luego toca el
-          mapa para colocarlo · Toque corto = anotación (o arrastra el dedo por varias casillas) · Para fijar la
-          posición definitiva: toca primero la casilla y luego mantenla pulsada</div>
+        <div class="hint-text">
+          Toca la tarjeta de un personaje (o de la víctima) para seleccionarlo, y luego toca el mapa para colocarlo 
+          · Toque corto = anotación (o arrastra el dedo por varias casillas) 
+          · Para fijar la posición definitiva: mantenla pulsada 
+          · Para desfijar la posición definitiva: mantenla pulsada habiendo seleccionado previamente ese mismo personaje </div>
         <div id="feedback"></div>
 
         <div class="section-title" style="margin-top:16px;">Pistas del expediente</div>
@@ -1131,8 +1146,8 @@
       "Jose": "#bf928d"
     };
     const VICTIMS = [
-  { id: "mocca", name: "Mocca", emoji: "🐾", found: "hallada", pronoun: "ella" }
-];
+      { id: "mocca", name: "Mocca", emoji: "🐾", found: "hallada", pronoun: "ella" }
+    ];
     function nextVictim() {
       return VICTIMS[0];
     }
@@ -1142,53 +1157,52 @@
     }
 
 
-const MAPS = [
-  {
-    id: "cafe", emoji: "🚂", name: "CAF",
-    desc: "",
-    rooms: [
-      { name: "la sala de juntas", obstacles: ["🚇 la maqueta del tranvía de Granada", "🎄 el arbol de navidad"], features: ["🪑 la silla", "🗺️ el mapa del Cairo"] },
-      { name: "el departamento de diseño", obstacles: ["📓 los planos de Reichshoffen", "🗄️ el archivador"], features: ["📋 el despido de maite", "🪑 la silla"] },
-      { name: "la sala de maquetas", obstacles: ["🚇 la maqueta del tranvía de Granada"], features: ["🗺️ el mapa del Cairo"] },
-      { name: "la mazmorra de Pedro el informático", obstacles: ["👧🏽 la niña mala"], features: ["🔋 las pilas robadas"] },
-      { name: "la recepción", obstacles: ["👩🏻 Maite", "🗄️ el archivador"], features: ["🪑 la silla"] },
-      { name: "la cafetería", obstacles: ["🥤 la máquina de café", "🧽 el trapo sucio de las limpiadoras"], features: ["☕ el café del Vander"] },
-      { name: "el baño", obstacles: ["🧽 el trapo sucio de las limpiadoras"], features: ["🚽 el retrete sin agua"] }
-    ]
-  },
-  {
-    id: "dental", emoji: "🦷", name: "Moradent",
-    desc: "",
-    rooms: [
-      { name: "la sala de espera", obstacles: ["🎃 manta de stranger things", "🛕 un buddha"], features: ["🪑 la silla", "🖼️ el póster de Gongo"] },
-      { name: "la consulta", obstacles: ["☢️ la máquina de rayos X"], features: ["🛏️ la camilla"] },
-      { name: "el baño", obstacles: ["📦 la caja de kemphor"], features: ["🪑 la silla"] },
-      { name: "el salon de Gema", obstacles: ["🔱 un cuerno de ciervo", "🗄️ el archivador"], features: ["🖼️ el póster de Gongo"] },
-      { name: "el laboratorio", obstacles: ["✂ las tijeras (de D.C)", "☢️ la máquina de rayos X"], features: ["🔬 el microscopio del señor Moles", "🦯 el látigo del señor Moles"] },
-      { name: "el almacén", obstacles: ["📦 la caja de kemphor", "🗄️ el archivador"], features: ["🗒 los post-its del hada"] },
-      { name: "el recibidor", obstacles: ["🛕 un buddha"], features: ["🗒 los post-its del hada", "🪑 la silla"] }
-    ]
-  },
-  {
-    id: "lab", emoji: "🧪", name: "Laboratorio de edafología",
-    desc: "",
-    rooms: [
-      { name: "la sala de muestras", obstacles: ["🦽 la barbie negra"], features: ["🌀 la centrifugadora", "🔬 el microscopio"] },
-      { name: "la cámara frigorífica", obstacles: ["🧊 el congelador"], features: ["🥼 la bata"] },
-      { name: "la sala de análisis", obstacles: ["🦕 Stifen"], features: ["🚿 la pileta", "🔬 el microscopio"] },
-      { name: "la oficina de María", obstacles: ["👱🏻‍♀️ Ana", "📚 los libros del National Geographic"], features: ["💻 el escritorio", "📋 los apuntes"] },
-      { name: "el almacén", obstacles: ["🧯 el extintor", "🌱 el poto"], features: ["👽 el smiski", "📷 la polaroid"] },
-      { name: "la sala de incubación", obstacles: ["🥚 la incubadora"], features: ["🌀 la centrifugadora"] }
-    ]
-  }
-];
-
-    const DIFFICULTIES = [
-      { id: "facil", name: "Fácil", n: 5, size: 6, types: ["pin", "room", "feature", "beside"], desc: "" },
-      { id: "medio", name: "Intermedio", n: 7, size: 8, types: ["room", "feature", "beside", "compareRow", "compareCol"], desc: "" },
-      { id: "dificil", name: "Difícil", n: 9, size: 10, types: ["compareRow", "compareCol", "beside", "room"], desc: "" }
+    const MAPS = [
+      {
+        id: "cafe", emoji: "🚂", name: "CAF",
+        desc: "",
+        rooms: [
+          { name: "la sala de juntas", obstacles: ["🚇 la maqueta del tranvía de Granada", "🎄 el arbol de navidad", "🖥️ el proyector"], features: ["🪑 la silla", "🗺️ el mapa del Cairo", "🗺️ el mapa de Marruecos"] },
+          { name: "el departamento de diseño", obstacles: ["🗺️ los planos de Reichshoffen", "👧🏽 la niña mala", "🗄️ el archivador"], features: ["📋 el despido de maite", "🪑 la silla", "💻 el portátil"] },
+          { name: "la sala de maquetas", obstacles: ["🚇 la maqueta del tranvía de Reichshoffen", "📦 las piezas"], features: ["🗺️ el mapa del Cairo", "🗺️ el mapa de Marruecos"] },
+          { name: "la mazmorra de Pedro el informático", obstacles: ["👨🏻 Pedro el informático"], features: ["🔋 las pilas robadas", "💻 el portátil", "💼 la mochila"] },
+          { name: "la recepción", obstacles: ["👩🏻 Maite", "🗄️ el archivador"], features: ["🪑 la silla", "💻 el portátil"] },
+          { name: "la cafetería", obstacles: ["🥤 la máquina de café", "🧽 un trapo sucio de las limpiadoras"], features: ["☕ el café del Vander", "🥪 el sándwich"] },
+          { name: "el baño", obstacles: ["🧽 un trapo sucio de las limpiadoras"], features: ["🚽 el retrete sin agua", "🧼 el lavabo"] }
+        ]
+      },
+      {
+        id: "dental", emoji: "🦷", name: "Moradent",
+        desc: "",
+        rooms: [
+          { name: "la sala de espera", obstacles: ["🛕 un buddha", "🗄️ el archivador"], features: ["🪑 la silla", "🖼️ el póster de Gongo", "🗒 los post-its del hada"] },
+          { name: "la consulta", obstacles: ["☢️ la máquina de rayos X"], features: ["🛏️ la camilla", "🗒 los post-its del hada"] },
+          { name: "el baño", obstacles: ["📦 la caja de mascarillas"], features: ["🚽 el retrete", "🧼 el lavabo"] },
+          { name: "el salon de Gema", obstacles: ["🔱 un cuerno de ciervo", "🎃 la manta de stranger things"], features: ["🖥️ la tele", "🛋 el sofá", "🗒 los post-its del hada"] },
+          { name: "el laboratorio", obstacles: ["✂ las tijeras (de D.C)", "☢️ la máquina de rayos X"], features: ["🔬 el microscopio del señor Moles", "🦯 el látigo del señor Moles", "🗒 los post-its del hada"] },
+          { name: "el almacén", obstacles: ["📦 la caja de kemphor", "🗄️ el archivador"], features: ["🗒 los post-its del hada"] },
+          { name: "el recibidor", obstacles: ["🛕 un buddha"], features: ["🗒 los post-its del hada", "🪑 la silla", "📞 el teléfono de citas"] }
+        ]
+      },
+      {
+        id: "lab", emoji: "🧪", name: "Laboratorio de edafología",
+        desc: "",
+        rooms: [
+          { name: "la sala de muestras", obstacles: ["🦽 la barbie negra"], features: ["🧪 las muestras", "🔬 el microscopio", "🗒 los post-its del hada"] },
+          { name: "la cámara frigorífica", obstacles: ["🧊 el congelador"], features: ["🥼 la bata", "🗒 los post-its del hada"] },
+          { name: "la sala de análisis", obstacles: ["🦕 Stifen"], features: ["🚿 la pileta", "🔬 el microscopio", "🗒 los post-its del hada"] },
+          { name: "la oficina de María", obstacles: ["👱🏻‍♀️ Ana", "📚 los libros del National Geographic"], features: ["💻 el escritorio", "📋 los apuntes", "🗒 los post-its del hada"] },
+          { name: "el almacén", obstacles: ["🧯 el extintor", "🌱 el poto"], features: ["👽 el smiski", "📷 la polaroid", "🗒 los post-its del hada"] },
+          { name: "la sala de incubación", obstacles: ["🥚 la incubadora"], features: ["🌀 la centrifugadora", "🗒 los post-its del hada"] }
+        ]
+      }
     ];
 
+    const DIFFICULTIES = [
+      { id: "facil", name: "Fácil", n: 5, size: 6, types: ["pin", "room", "feature", "beside", "row_only", "col_only", "half"], desc: "" },
+      { id: "medio", name: "Intermedio", n: 7, size: 8, types: ["room", "feature", "beside", "compareRow", "compareCol", "row_only", "col_only"], desc: "" },
+      { id: "dificil", name: "Difícil", n: 9, size: 10, types: ["compareRow", "compareCol", "beside", "room", "half"], desc: "" }
+    ];
     const ROOM_COLORS = ["#7a5c8a", "#3c5c5c", "#8a5c3c", "#5c7a8a", "#8a3c5c", "#5c8a5c", "#8a7a3c", "#5c5c8a", "#8a5c5c", "#3c8a7a"];
 
     const ROOM_STOPWORDS = new Set(['de', 'del', 'la', 'los', 'las', 'y', 'en', 'a', 'al', 'el']);
@@ -1450,12 +1464,29 @@ const MAPS = [
 
       return { roomGrid, roomList, roomRects };
     }
+    // Función auxiliar para identificar si un objeto es común y puede repetirse hasta 3 veces
+    function isCommonItem(name) {
+      if (!name) return false;
+      const clean = name.toLowerCase();
+      return clean.includes("silla") ||
+        clean.includes("post-it") ||
+        clean.includes("portátil") ||
+        clean.includes("portatil") ||
+        clean.includes("caja") ||
+        clean.includes("café") ||
+        clean.includes("sándwich") ||
+        clean.includes("bata") ||
+        clean.includes("muestra") ||
+        clean.includes("pila") ||
+        clean.includes("pieza");
+    }
+
     function tryGenerate(mapDef, diff) {
       const size = diff.size;
       const N = diff.n;
       const suspects = shuffle(SUSPECTS).slice(0, N);
 
-      // Extraer nombres de salas (funciona tanto si mapDef.rooms son strings como si son objetos)
+      // Extraer nombres de salas
       const roomNames = mapDef.rooms.map(r => typeof r === 'string' ? r : r.name);
       const { roomGrid, roomList, roomRects } = buildRooms(size, roomNames);
 
@@ -1474,20 +1505,24 @@ const MAPS = [
       const GUARANTEED_OBS = ["👧🏽 la niña mala", "👩🏻 Maite", "🛎️ mostrador de recepción", "✂ tijeras (de D.C)", "🦽 barbie negra", "🦕 Stifen", "👱🏻‍♀️ Ana", "🎃 manta de stranger things", "✂ las tijeras (de D.C)"];
       const GUARANTEED_FEAT = ["📋 despido de maite", "🖼️ póster de Gongo", "🔬 microscopio del señor Moles", "📷 la polaroid", "👽 el smiski", "🦯 el látigo del señor Moles"];
 
-      // Recopilar todos los obstáculos y rasgos disponibles en las salas de ESTE mapa
+      // Recopilar todos los obstáculos y rasgos disponibles en ESTE mapa
       const allMapObstacles = [...new Set(mapDef.rooms.flatMap(r => typeof r === 'object' && r.obstacles ? r.obstacles : (mapDef.obstacles || [])))];
       const allMapFeatures = [...new Set(mapDef.rooms.flatMap(r => typeof r === 'object' && r.features ? r.features : (mapDef.features || [])))];
 
-      // --- OBSTÁCULOS ---
+      const usedUniqueObs = new Set();
+      const usedUniqueFeat = new Set();
+      const obsCounts = {};
+      const featCounts = {};
+
+      // --- 1. OBSTÁCULOS ---
       const obstacle = Array.from({ length: size }, () => Array(size).fill(null));
       const totalCells = size * size;
       const obstacleCount = Math.floor(totalCells * 0.15);
       let placedObs = 0;
 
-      // Filtrar cuáles obligatorios y cuáles normales hay en ESTE mapa
+      // A) Colocar obstáculos obligatorios (GUARANTEED_OBS) prioritariamente en su sala
       const mapGuaranteedObs = allMapObstacles.filter(o => GUARANTEED_OBS.includes(o));
 
-      // 1º Colocar los obstáculos obligatorios (sí o sí, una sola vez, priorizando su habitación temática)
       for (const obs of mapGuaranteedObs) {
         let placed = false;
         let localGuard = 0;
@@ -1496,9 +1531,10 @@ const MAPS = [
           const r = rnd(size), c = rnd(size);
           if (!obstacle[r][c]) {
             const allowedObs = getRoomObsList(roomGrid[r][c]);
-            // Coloca si pertenece a esta sala o si lleva más de 500 intentos (fallback de seguridad)
-            if (allowedObs.includes(obs) || localGuard > 500) {
+            if (allowedObs.includes(obs) || localGuard > 500) { // Fallback si no hay hueco en su sala
               obstacle[r][c] = obs;
+              usedUniqueObs.add(obs);
+              obsCounts[obs] = (obsCounts[obs] || 0) + 1;
               placed = true;
               placedObs++;
             }
@@ -1506,28 +1542,34 @@ const MAPS = [
         }
       }
 
-      // 2º Rellenar el resto de la densidad con obstáculos normales según su habitación (máx 3 por tipo)
-      const obsCounts = {};
+      // B) Rellenar la densidad de obstáculos restante (Comunes: máx 3 | Únicos: máx 1)
       let guardObs = 0;
       while (placedObs < obstacleCount && guardObs < 5000) {
         guardObs++;
         const r = rnd(size), c = rnd(size);
         if (!obstacle[r][c]) {
-          const roomObs = getRoomObsList(roomGrid[r][c]).filter(o => !GUARANTEED_OBS.includes(o));
-          if (roomObs.length > 0) {
-            const candidate = roomObs[rnd(roomObs.length)];
-            const currentCount = obsCounts[candidate] || 0;
-
-            if (currentCount < 3) {
-              obstacle[r][c] = candidate;
-              obsCounts[candidate] = currentCount + 1;
-              placedObs++;
+          const roomObs = getRoomObsList(roomGrid[r][c]);
+          const candidates = roomObs.filter(o => {
+            if (isCommonItem(o)) {
+              return (obsCounts[o] || 0) < 3;
+            } else {
+              return !usedUniqueObs.has(o);
             }
+          });
+
+          if (candidates.length > 0) {
+            const candidate = candidates[rnd(candidates.length)];
+            obstacle[r][c] = candidate;
+            obsCounts[candidate] = (obsCounts[candidate] || 0) + 1;
+            if (!isCommonItem(candidate)) {
+              usedUniqueObs.add(candidate);
+            }
+            placedObs++;
           }
         }
       }
 
-      // --- RASGOS (FEATURES) ---
+      // --- 2. RASGOS (FEATURES) ---
       const feature = Array.from({ length: size }, () => Array(size).fill(null));
       const freeCells = [];
       for (let r = 0; r < size; r++) {
@@ -1540,10 +1582,9 @@ const MAPS = [
       const shuffledFree = shuffle(freeCells);
       let placedFeat = 0;
 
-      // Filtrar cuáles obligatorios hay en ESTE mapa
+      // A) Colocar rasgos obligatorios (GUARANTEED_FEAT)
       const mapGuaranteedFeat = allMapFeatures.filter(f => GUARANTEED_FEAT.includes(f));
 
-      // 1º Colocar los rasgos obligatorios (priorizando su habitación temática)
       for (const feat of mapGuaranteedFeat) {
         let placed = false;
         for (let i = 0; i < shuffledFree.length; i++) {
@@ -1552,18 +1593,22 @@ const MAPS = [
             const allowedFeat = getRoomFeatList(roomGrid[r][c]);
             if (allowedFeat.includes(feat)) {
               feature[r][c] = feat;
+              usedUniqueFeat.add(feat);
+              featCounts[feat] = (featCounts[feat] || 0) + 1;
               placed = true;
               placedFeat++;
               break;
             }
           }
         }
-        // Fallback: si no encajó en su sala temática por falta de espacio, lo coloca en cualquier casilla libre
+        // Fallback si no cupo en su habitación
         if (!placed && placedFeat < shuffledFree.length) {
           for (let i = 0; i < shuffledFree.length; i++) {
             const [r, c] = shuffledFree[i];
             if (!feature[r][c]) {
               feature[r][c] = feat;
+              usedUniqueFeat.add(feat);
+              featCounts[feat] = (featCounts[feat] || 0) + 1;
               placedFeat++;
               break;
             }
@@ -1571,28 +1616,34 @@ const MAPS = [
         }
       }
 
-      // 2º Rellenar el resto de rasgos según la habitación de la casilla (máx 3 por tipo)
-      const featCounts = {};
+      // B) Rellenar rasgos restantes (Comunes: máx 3 | Únicos: máx 1)
       let freeIdx = 0;
       while (placedFeat < featCount && freeIdx < shuffledFree.length) {
         const [r, c] = shuffledFree[freeIdx];
         freeIdx++;
-        if (feature[r][c]) continue; // casilla ya ocupada por rasgo obligatorio
+        if (feature[r][c]) continue;
 
-        const roomFeats = getRoomFeatList(roomGrid[r][c]).filter(f => !GUARANTEED_FEAT.includes(f));
-        if (roomFeats.length > 0) {
-          const candidate = roomFeats[rnd(roomFeats.length)];
-          const currentCount = featCounts[candidate] || 0;
-
-          if (currentCount < 3) {
-            feature[r][c] = candidate;
-            featCounts[candidate] = currentCount + 1;
-            placedFeat++;
+        const roomFeats = getRoomFeatList(roomGrid[r][c]);
+        const candidates = roomFeats.filter(f => {
+          if (isCommonItem(f)) {
+            return (featCounts[f] || 0) < 3;
+          } else {
+            return !usedUniqueFeat.has(f);
           }
+        });
+
+        if (candidates.length > 0) {
+          const candidate = candidates[rnd(candidates.length)];
+          feature[r][c] = candidate;
+          featCounts[candidate] = (featCounts[candidate] || 0) + 1;
+          if (!isCommonItem(candidate)) {
+            usedUniqueFeat.add(candidate);
+          }
+          placedFeat++;
         }
       }
 
-      // --- ASIGNACIÓN ÚNICA DE PERSONAJES (EJE X E Y DIVERSOS) ---
+      // --- 3. ASIGNACIÓN ÚNICA DE PERSONAJES (NUNCA EN EL MISMO EJE X E Y) ---
       const rowsAvail = shuffle([...Array(size).keys()]);
       const colsAvail = shuffle([...Array(size).keys()]);
       const solution = {}; // suspect -> {r,c}
@@ -1601,10 +1652,8 @@ const MAPS = [
       function backtrack(i) {
         if (i >= suspects.length) return true;
         const s = suspects[i];
-        // Filtra para usar solo filas (eje Y) que NO se hayan usado ya
         const rowsShuffled = shuffle(rowsAvail.filter(r => !usedRows.has(r)));
         for (const r of rowsShuffled) {
-          // Filtra para usar solo columnas (eje X) que NO se hayan usado ya
           const colsShuffled = shuffle(colsAvail.filter(c => !usedCols.has(c)));
           for (const c of colsShuffled) {
             if (obstacle[r][c]) continue;
@@ -1618,6 +1667,7 @@ const MAPS = [
       }
       if (!backtrack(0)) return null;
 
+      // La víctima obtiene la única fila y columna sin ocupar por sospechosos
       const unusedRow = [...Array(size).keys()].find(r => !usedRows.has(r));
       const unusedCol = [...Array(size).keys()].find(c => !usedCols.has(c));
       if (unusedRow === undefined || unusedCol === undefined) return null;
@@ -1625,13 +1675,13 @@ const MAPS = [
 
       const victimCell = { r: unusedRow, c: unusedCol };
       const victimRoom = roomGrid[victimCell.r][victimCell.c];
+
+      // Filtrar sospechosos en la misma sala que la víctima
       const sharing = suspects.filter(s => roomGrid[solution[s].r][solution[s].c] === victimRoom);
-      if (sharing.length === 0) return null;
-      sharing.sort((a, b) => {
-        const da = Math.abs(solution[a].r - victimCell.r) + Math.abs(solution[a].c - victimCell.c);
-        const db = Math.abs(solution[b].r - victimCell.r) + Math.abs(solution[b].c - victimCell.c);
-        return da - db;
-      });
+
+      // REGLA: Debe haber EXACTAMENTE 1 sospechoso a solas con la víctima en esa área
+      if (sharing.length !== 1) return null;
+
       const killer = sharing[0];
 
       return { mapDef, diff, size, suspects, roomGrid, roomList, roomRects, obstacle, feature, solution, victimCell, victimRoom, killer };
@@ -1653,54 +1703,116 @@ const MAPS = [
       const { suspects, solution, feature, roomGrid, roomList, size } = p;
       const pool = [];
 
+      // Conteo de frecuencia de cada objeto/rasgo en el mapa
+      const featureCounts = {};
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          const feat = feature[r][c];
+          if (feat) {
+            featureCounts[feat] = (featureCounts[feat] || 0) + 1;
+          }
+        }
+      }
+
       suspects.forEach(s => {
         const cell = solution[s];
         const f = feature[cell.r][cell.c];
         const room = roomGrid[cell.r][cell.c];
 
-        // Si hay un rasgo, metemos la pista combinada avanzada (Sala + Rasgo)
-        if (f) {
+        // --- A. RASGOS / OBJETOS (FEATURE) ---
+        // REGLA: Solo genera esta pista si existen 2 o más objetos de ese tipo en el mapa
+        if (f && featureCounts[f] >= 2) {
+          const cleanFeature = f.replace(/^\S+\s/, '');
           pool.push({
-            type: 'pin',
+            type: 'feature',
             subject: s,
-            text: `${s} estuvo sobre ${f.replace(/^\S+\s/, '')} en ${roomList[room]}.`,
+            text: `${s} estuvo sobre ${cleanFeature} en ${roomList[room]}.`,
             apply: (dom) => {
               dom[s] = dom[s].filter(([r, c]) => feature[r][c] === f && roomGrid[r][c] === room);
             }
           });
-        } else {
-          // Si no hay rasgo, metemos únicamente la pista de la sala limpia
-          pool.push({
-            type: 'room',
-            subject: s,
-            text: `${s} estuvo en ${roomList[room]}.`,
-            apply: (dom) => {
-              dom[s] = dom[s].filter(([r, c]) => roomGrid[r][c] === room);
-            }
-          });
         }
 
-        // "Beside" clues
+        // --- B. SALA LIMPIA ---
+        pool.push({
+          type: 'room',
+          subject: s,
+          text: `${s} estuvo en ${roomList[room]}.`,
+          apply: (dom) => {
+            dom[s] = dom[s].filter(([r, c]) => roomGrid[r][c] === room);
+          }
+        });
+
+        // --- C. FILA O COLUMNA ÚNICA ---
+        pool.push({
+          type: 'row_only',
+          subject: s,
+          text: `${s} estuvo en la fila ${cell.r + 1}.`,
+          apply: (dom) => {
+            dom[s] = dom[s].filter(([r, c]) => r === cell.r);
+          }
+        });
+
+        pool.push({
+          type: 'col_only',
+          subject: s,
+          text: `${s} estuvo en la columna ${cell.c + 1}.`,
+          apply: (dom) => {
+            dom[s] = dom[s].filter(([r, c]) => c === cell.c);
+          }
+        });
+
+        // --- D. MITAD DEL MAPA (NORTE/SUR, OESTE/ESTE) ---
+        const mid = Math.floor(size / 2);
+        const isNorth = cell.r < mid;
+        pool.push({
+          type: 'half',
+          subject: s,
+          text: `${s} estuvo en la mitad ${isNorth ? 'norte' : 'sur'}.`,
+          apply: (dom) => {
+            dom[s] = dom[s].filter(([r, c]) => isNorth ? r < mid : r >= mid);
+          }
+        });
+
+        const isWest = cell.c < mid;
+        pool.push({
+          type: 'half',
+          subject: s,
+          text: `${s} estuvo en la mitad ${isWest ? 'oeste' : 'este'}.`,
+          apply: (dom) => {
+            dom[s] = dom[s].filter(([r, c]) => isWest ? c < mid : c >= mid);
+          }
+        });
+
+        // --- E. OBSTÁCULOS ADYACENTES (BESIDE) ---
         const neighbors = [[cell.r - 1, cell.c], [cell.r + 1, cell.c], [cell.r, cell.c - 1], [cell.r, cell.c + 1]];
         neighbors.forEach(([nr, nc]) => {
           if (nr < 0 || nc < 0 || nr >= size || nc >= size) return;
+          if (roomGrid[nr][nc] !== room) return;
+
           const obs = p.obstacle[nr][nc];
           if (!obs) return;
+
+          const cleanObs = obs.replace(/^\S+\s/, '');
+          const besideText = isCommonItem(obs)
+            ? `${s} estuvo junto a ${cleanObs} en ${roomList[room]}.`
+            : `${s} estuvo junto a ${cleanObs}.`;
+
           pool.push({
             type: 'beside',
             subject: s,
-            text: `${s} estuvo justo al lado de ${obs.replace(/^\S+\s/, '')}.`,
+            text: besideText,
             apply: (dom) => {
-              dom[s] = dom[s].filter(([r, c]) => Math.abs(r - nr) + Math.abs(c - nc) === 1);
+              dom[s] = dom[s].filter(([r, c]) =>
+                roomGrid[r][c] === roomGrid[nr][nc] &&
+                Math.abs(r - nr) + Math.abs(c - nc) === 1
+              );
             }
           });
         });
       });
-      // NOTE: every suspect occupies a unique row AND a unique column (like
-      // non-attacking rooks), so "same row/col" or orthogonal adjacency BETWEEN
-      // TWO PEOPLE is never true. The only spatial relations between two people
-      // are strict orderings (north/south, west/east). Adjacency clues instead
-      // describe a person's position relative to a fixed obstacle (see above).
+
+      // --- COMPARACIONES RELATIVAS ---
       for (let i = 0; i < suspects.length; i++) {
         for (let j = i + 1; j < suspects.length; j++) {
           const A = suspects[i], B = suspects[j], ca = solution[A], cb = solution[B];
@@ -1715,7 +1827,7 @@ const MAPS = [
           });
           const [west, east] = ca.c < cb.c ? [A, B] : [B, A];
           pool.push({
-            type: 'compareCol', subjects: [west, east], text: `${west} estuvo más al oeste (izquierda) que ${east}.`, apply: (dom) => {
+            type: 'compareCol', subjects: [west, east], text: `${west} estuvo más al oeste que ${east}.`, apply: (dom) => {
               const maxEast = Math.max(...dom[east].map(x => x[1]));
               const minWest = Math.min(...dom[west].map(x => x[1]));
               dom[west] = dom[west].filter(x => x[1] < maxEast + 1);
@@ -1725,16 +1837,17 @@ const MAPS = [
         }
       }
 
+      // --- PISTA EXACTA DIRECTA ---
       suspects.forEach(s => {
         const cell = solution[s];
         pool.push({
-          type: 'exact', subject: s, text: `Según los testigos, a ${s} se le vio en la fila ${cell.r + 1}, columna ${cell.c + 1} del plano.`, apply: (dom) => {
+          type: 'exact', subject: s, text: `${s} estuvo en la fila ${cell.r + 1}, columna ${cell.c + 1}.`, apply: (dom) => {
             dom[s] = dom[s].filter(([r, c]) => r === cell.r && c === cell.c);
           }
         });
       });
 
-      const STRENGTH = { pin: 5, beside: 3, room: 2, feature: 2, compareRow: 1, compareCol: 1, exact: 0 };
+      const STRENGTH = { pin: 5, row_only: 4, col_only: 4, beside: 3, feature: 3, room: 2, half: 2, compareRow: 1, compareCol: 1, exact: 0 };
       const byStrengthDesc = (a, b) => STRENGTH[b.type] - STRENGTH[a.type];
       const allowed = shuffle(pool.filter(cl => diff.types.includes(cl.type))).sort(byStrengthDesc);
       const backup = shuffle(pool.filter(cl => !diff.types.includes(cl.type) && cl.type !== 'exact')).sort(byStrengthDesc);
@@ -1754,11 +1867,7 @@ const MAPS = [
             const after = suspects.map(s => dom[s].length).join(',');
             if (before !== after) changed = true;
           });
-          // Singleton propagation: once a suspect's cell is certain, no one
-          // else can share that row or column. (We deliberately do NOT do a
-          // "hidden single per row/col" pass: one row and one column are
-          // reserved for the victim, so "only one suspect can use row r"
-          // does not imply that suspect occupies row r.)
+
           suspects.forEach(s => {
             if (dom[s].length === 1) {
               const [r, c] = dom[s][0];
@@ -1798,17 +1907,47 @@ const MAPS = [
 
       const chosen = [];
       let solved = false;
+
+      // REGLA: Máximo 1 revelación exacta en fácil; 0 en media y difícil
+      const maxExactPosReveals = (diff.id === 'facil') ? 1 : 0;
+      let exactPosReveals = 0;
+      const suspectRowsGiven = new Set();
+      const suspectColsGiven = new Set();
+
       for (const clue of ordered) {
+        let revealsExact = false;
+
+        if (clue.type === 'exact' || clue.type === 'pin') {
+          revealsExact = true;
+        } else if (clue.type === 'row_only' && suspectColsGiven.has(clue.subject)) {
+          revealsExact = true;
+        } else if (clue.type === 'col_only' && suspectRowsGiven.has(clue.subject)) {
+          revealsExact = true;
+        }
+
+        // Si la pista revela la casilla exacta y se excede el límite (0 para medio/difícil), la descartamos
+        if (revealsExact && exactPosReveals >= maxExactPosReveals) {
+          continue;
+        }
+
         chosen.push(clue);
+
+        if (clue.type === 'exact' || clue.type === 'pin') {
+          exactPosReveals++;
+        } else if (clue.type === 'row_only') {
+          if (suspectColsGiven.has(clue.subject)) exactPosReveals++;
+          suspectRowsGiven.add(clue.subject);
+        } else if (clue.type === 'col_only') {
+          if (suspectRowsGiven.has(clue.subject)) exactPosReveals++;
+          suspectColsGiven.add(clue.subject);
+        }
+
         propagate(domain, chosen);
         if (countSolutions(domain, 2) === 1) { solved = true; break; }
       }
       if (!solved) return null;
 
-      // Minimize: drop redundant clues, keeping the naturally-few flavor
-      // clues (pin/room/feature) for readability and trimming the numerous
-      // comparison/fallback clues down to only what's actually needed.
-      const GENEROUS_TYPES = ['pin', 'room', 'feature', 'beside'];
+      // Minimización para descartar pistas redundantes
       function domainsFromClues(clueList) {
         const dom = {}; suspects.forEach(s => dom[s] = [...allCells]);
         propagate(dom, clueList);
@@ -1816,7 +1955,6 @@ const MAPS = [
       }
       let working = [...chosen];
       for (let i = working.length - 1; i >= 0; i--) {
-        if (diff.types.includes(working[i].type) && GENEROUS_TYPES.includes(working[i].type)) continue;
         const candidate = working.slice(0, i).concat(working.slice(i + 1));
         const dom = domainsFromClues(candidate);
         if (countSolutions(dom, 2) === 1) { working = candidate; }
@@ -1849,6 +1987,9 @@ const MAPS = [
       document.getElementById('feedback').innerHTML = ''; renderBoard();
       renderClues();
       renderLegends();
+      requestAnimationFrame(() => {
+        adjustMap(); // Invoca la función ligada a tu botón de ajustar mapa
+      });
       startTimer();
     }
 
@@ -1863,7 +2004,14 @@ const MAPS = [
     }
 
     function renderBoard() {
+      const boardWrap = document.getElementById('boardWrap');
+      const savedScrollLeft = boardWrap ? boardWrap.scrollLeft : 0;
+      const savedScrollTop = boardWrap ? boardWrap.scrollTop : 0;
+
       const board = document.getElementById('board');
+      if (!board) return;
+      board.style.transform = 'none'; // Evita la doble escala CSS
+
       const baseCellPx = Math.max(32, Math.min(48, Math.floor(358 / puzzle.size)));
       const cellPx = Math.round(baseCellPx * boardZoom);
       board.style.gridTemplateColumns = `repeat(${puzzle.size}, ${cellPx}px)`;
@@ -1935,202 +2083,206 @@ const MAPS = [
             if (armedCell === key && mode === 'place') div.classList.add('armed');
 
             // REEMPLAZAR EN renderBoard():
-div.dataset.key = key;
+            div.dataset.key = key;
 
-let cellTimer = null;
-let isLongPress = false;
-let startX = 0;
-let startY = 0;
+            let cellTimer = null;
+            let isLongPress = false;
+            let startX = 0;
+            let startY = 0;
 
-div.addEventListener('pointerdown', (e) => {
-  isLongPress = false;
-  startX = e.clientX;
-  startY = e.clientY;
+            div.addEventListener('pointerdown', (e) => {
+              isLongPress = false;
+              startX = e.clientX;
+              startY = e.clientY;
 
-  // Iniciar el temporizador para la pulsación larga (500 ms)
-  cellTimer = setTimeout(() => {
-    isLongPress = true;
-    lockCell(r, c); // Fijar al 100% solo si se mantiene presionado
-  }, 500);
-});
+              // Iniciar el temporizador para la pulsación larga (500 ms)
+              cellTimer = setTimeout(() => {
+                isLongPress = true;
+                lockCell(r, c); // Fijar al 100% solo si se mantiene presionado
+              }, 500);
+            });
 
-div.addEventListener('pointermove', (e) => {
-  if (cellTimer) {
-    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (dist > 10) { // Si el usuario arrastra o hace scroll, cancelamos
-      clearTimeout(cellTimer);
-      cellTimer = null;
-    }
-  }
-});
+            div.addEventListener('pointermove', (e) => {
+              if (cellTimer) {
+                const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+                if (dist > 10) { // Si el usuario arrastra o hace scroll, cancelamos
+                  clearTimeout(cellTimer);
+                  cellTimer = null;
+                }
+              }
+            });
 
-div.addEventListener('pointerup', () => {
-  // Cancelar inmediatamente el temporizador al levantar el dedo
-  if (cellTimer) {
-    clearTimeout(cellTimer);
-    cellTimer = null;
-  }
-  // Si no se llegó a completar la pulsación larga, es un toque corto (Anotación)
-  if (!isLongPress) {
-    cellClick(r, c);
-  }
-});
+            div.addEventListener('pointerup', () => {
+              // Cancelar inmediatamente el temporizador al levantar el dedo
+              if (cellTimer) {
+                clearTimeout(cellTimer);
+                cellTimer = null;
+              }
+              // Si no se llegó a completar la pulsación larga, es un toque corto (Anotación)
+              if (!isLongPress) {
+                cellClick(r, c);
+              }
+            });
 
-div.addEventListener('pointercancel', () => {
-  if (cellTimer) {
-    clearTimeout(cellTimer);
-    cellTimer = null;
-  }
-});
+            div.addEventListener('pointercancel', () => {
+              if (cellTimer) {
+                clearTimeout(cellTimer);
+                cellTimer = null;
+              }
+            });
 
-div.addEventListener('click', (e) => {
-  e.preventDefault();
-});
+            div.addEventListener('click', (e) => {
+              e.preventDefault();
+            });
           }
           board.appendChild(div);
         }
       }
       renderRoomLabels(cellPx);
-    }
-function renderRoomLabels(cellPx) {
-  const board = document.getElementById('board');
-  board.style.position = 'relative';
-  const gap = 3;
-  const labelH = Math.max(11, Math.min(14, cellPx * 0.3));
-
-  // Detectar automáticamente cualquier matriz 2D dentro del objeto puzzle
-  let boardMatrix = null;
-  const candidateKeys = ['board', 'grid', 'map', 'cells', 'roomGrid', 'roomMap', 'matrix', 'boardMatrix'];
-  for (const key of candidateKeys) {
-    if (puzzle[key] && Array.isArray(puzzle[key]) && Array.isArray(puzzle[key][0])) {
-      boardMatrix = puzzle[key];
-      break;
-    }
-  }
-  if (!boardMatrix) {
-    for (const key in puzzle) {
-      if (Array.isArray(puzzle[key]) && puzzle[key].length > 0 && Array.isArray(puzzle[key][0])) {
-        boardMatrix = puzzle[key];
-        break;
+      if (boardWrap) {
+        boardWrap.scrollLeft = savedScrollLeft;
+        boardWrap.scrollTop = savedScrollTop;
       }
     }
-  }
+    function renderRoomLabels(cellPx) {
+      const board = document.getElementById('board');
+      board.style.position = 'relative';
+      const gap = 3;
+      const labelH = Math.max(11, Math.min(14, cellPx * 0.3));
 
-  // 1. Recopilar datos y calcular posiciones físicas reales de todas las etiquetas
-  const labelsData = puzzle.roomRects.map((rect, idx) => {
-    const roomName = puzzle.roomList[idx];
-    const roomCode = computeRoomCode(roomName);
-
-    let bestRow = -1;
-    let bestCol = -1;
-
-    if (boardMatrix) {
-      for (let r = rect.r1 - 1; r >= rect.r0; r--) {
-        let foundInRow = false;
-        for (let c = rect.c0; c < rect.c1; c++) {
-          if (boardMatrix[r] && boardMatrix[r][c] !== undefined) {
-            const val = boardMatrix[r][c];
-            if (
-              val === idx || 
-              val === (idx + 1) || 
-              val === roomName || 
-              val === roomCode ||
-              (val && (val.index === idx || val.id === idx || val.room === idx))
-            ) {
-              foundInRow = true;
-              break;
-            }
-          }
-        }
-        if (foundInRow) {
-          bestRow = r;
+      // Detectar automáticamente cualquier matriz 2D dentro del objeto puzzle
+      let boardMatrix = null;
+      const candidateKeys = ['board', 'grid', 'map', 'cells', 'roomGrid', 'roomMap', 'matrix', 'boardMatrix'];
+      for (const key of candidateKeys) {
+        if (puzzle[key] && Array.isArray(puzzle[key]) && Array.isArray(puzzle[key][0])) {
+          boardMatrix = puzzle[key];
           break;
         }
       }
+      if (!boardMatrix) {
+        for (const key in puzzle) {
+          if (Array.isArray(puzzle[key]) && puzzle[key].length > 0 && Array.isArray(puzzle[key][0])) {
+            boardMatrix = puzzle[key];
+            break;
+          }
+        }
+      }
 
-      if (bestRow !== -1) {
-        for (let c = rect.c0; c < rect.c1; c++) {
-          if (boardMatrix[bestRow] && boardMatrix[bestRow][c] !== undefined) {
-            const val = boardMatrix[bestRow][c];
-            if (
-              val === idx || 
-              val === (idx + 1) || 
-              val === roomName || 
-              val === roomCode ||
-              (val && (val.index === idx || val.id === idx || val.room === idx))
-            ) {
-              bestCol = c;
+      // 1. Recopilar datos y calcular posiciones físicas reales de todas las etiquetas
+      const labelsData = puzzle.roomRects.map((rect, idx) => {
+        const roomName = puzzle.roomList[idx];
+        const roomCode = computeRoomCode(roomName);
+
+        let bestRow = -1;
+        let bestCol = -1;
+
+        if (boardMatrix) {
+          for (let r = rect.r1 - 1; r >= rect.r0; r--) {
+            let foundInRow = false;
+            for (let c = rect.c0; c < rect.c1; c++) {
+              if (boardMatrix[r] && boardMatrix[r][c] !== undefined) {
+                const val = boardMatrix[r][c];
+                if (
+                  val === idx ||
+                  val === (idx + 1) ||
+                  val === roomName ||
+                  val === roomCode ||
+                  (val && (val.index === idx || val.id === idx || val.room === idx))
+                ) {
+                  foundInRow = true;
+                  break;
+                }
+              }
+            }
+            if (foundInRow) {
+              bestRow = r;
               break;
+            }
+          }
+
+          if (bestRow !== -1) {
+            for (let c = rect.c0; c < rect.c1; c++) {
+              if (boardMatrix[bestRow] && boardMatrix[bestRow][c] !== undefined) {
+                const val = boardMatrix[bestRow][c];
+                if (
+                  val === idx ||
+                  val === (idx + 1) ||
+                  val === roomName ||
+                  val === roomCode ||
+                  (val && (val.index === idx || val.id === idx || val.room === idx))
+                ) {
+                  bestCol = c;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (bestRow === -1) bestRow = rect.r1 - 1;
+        if (bestCol === -1) bestCol = rect.c0;
+
+        const width = (rect.c1 - bestCol) * cellPx + (rect.c1 - bestCol - 1) * gap;
+        const left = bestCol * (cellPx + gap);
+        const top = bestRow * (cellPx + gap) + (cellPx - labelH);
+
+        let useAcronym = roomName.length > 15;
+
+        return {
+          idx,
+          roomName,
+          roomCode,
+          left,
+          top,
+          width,
+          height: labelH,
+          useAcronym
+        };
+      });
+
+      // 2. Resolver colisiones globalmente: si colisionan, la etiqueta situada MÁS A LA IZQUIERDA pasa automáticamente a siglas
+      let changed = true;
+      let iterations = 0;
+      while (changed && iterations < 15) {
+        changed = false;
+        iterations++;
+        for (let i = 0; i < labelsData.length; i++) {
+          for (let j = i + 1; j < labelsData.length; j++) {
+            const l1 = labelsData[i];
+            const l2 = labelsData[j];
+
+            const overlapX = l1.left < (l2.left + l2.width) && (l1.left + l1.width) > l2.left;
+            const overlapY = l1.top < (l2.top + l2.height) && (l1.top + l1.height) > l2.top;
+
+            if (overlapX && overlapY) {
+              const leftLabel = l1.left <= l2.left ? l1 : l2;
+
+              if (!leftLabel.useAcronym) {
+                leftLabel.useAcronym = true;
+                changed = true;
+              }
             }
           }
         }
       }
+
+      // 3. Renderizar definitivamente al DOM
+      labelsData.forEach(data => {
+        const finalText = data.useAcronym ? data.roomCode : data.roomName;
+
+        const label = document.createElement('div');
+        label.className = 'room-label';
+        label.textContent = finalText;
+        label.style.fontSize = `${Math.max(9, cellPx * 0.32)}px`;
+        label.style.left = `${data.left}px`;
+        label.style.top = `${data.top}px`;
+        label.style.width = `${data.width}px`;
+        label.style.height = `${data.height}px`;
+        label.style.lineHeight = `${data.height}px`;
+        board.appendChild(label);
+      });
     }
-
-    if (bestRow === -1) bestRow = rect.r1 - 1;
-    if (bestCol === -1) bestCol = rect.c0;
-
-    const width = (rect.c1 - bestCol) * cellPx + (rect.c1 - bestCol - 1) * gap;
-    const left = bestCol * (cellPx + gap);
-    const top = bestRow * (cellPx + gap) + (cellPx - labelH);
-
-    let useAcronym = roomName.length > 15;
-
-    return {
-      idx,
-      roomName,
-      roomCode,
-      left,
-      top,
-      width,
-      height: labelH,
-      useAcronym
-    };
-  });
-
-  // 2. Resolver colisiones globalmente: si colisionan, la etiqueta situada MÁS A LA IZQUIERDA pasa automáticamente a siglas
-  let changed = true;
-  let iterations = 0;
-  while (changed && iterations < 15) {
-    changed = false;
-    iterations++;
-    for (let i = 0; i < labelsData.length; i++) {
-      for (let j = i + 1; j < labelsData.length; j++) {
-        const l1 = labelsData[i];
-        const l2 = labelsData[j];
-
-        const overlapX = l1.left < (l2.left + l2.width) && (l1.left + l1.width) > l2.left;
-        const overlapY = l1.top < (l2.top + l2.height) && (l1.top + l1.height) > l2.top;
-
-        if (overlapX && overlapY) {
-          const leftLabel = l1.left <= l2.left ? l1 : l2;
-          
-          if (!leftLabel.useAcronym) {
-            leftLabel.useAcronym = true;
-            changed = true;
-          }
-        }
-      }
-    }
-  }
-
-  // 3. Renderizar definitivamente al DOM
-  labelsData.forEach(data => {
-    const finalText = data.useAcronym ? data.roomCode : data.roomName;
-
-    const label = document.createElement('div');
-    label.className = 'room-label';
-    label.textContent = finalText;
-    label.style.fontSize = `${Math.max(9, cellPx * 0.32)}px`;
-    label.style.left = `${data.left}px`;
-    label.style.top = `${data.top}px`;
-    label.style.width = `${data.width}px`;
-    label.style.height = `${data.height}px`;
-    label.style.lineHeight = `${data.height}px`;
-    board.appendChild(label);
-  });
-} 
-function hexAlpha(hex, alpha) {
+    function hexAlpha(hex, alpha) {
       const n = parseInt(hex.slice(1), 16);
       const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
       return `rgba(${r},${g},${b},${alpha})`;
@@ -2244,31 +2396,58 @@ function hexAlpha(hex, alpha) {
       const undoBtn = document.getElementById('undoBtn');
       if (undoBtn) undoBtn.disabled = false;
     }
+    function isCellAutoCrossedByOtherLock(r, c, excludeName) {
+      for (const [lockedKey, lockedName] of userLocked.entries()) {
+        if (lockedName === excludeName) continue;
+        const [lr, lc] = lockedKey.split(',').map(Number);
+        if (lr === r || lc === c) {
+          return true; // La casilla debe seguir marcada porque la necesita OTRO personaje bloqueado
+        }
+      }
+      return false;
+    }
 
     // A suspect (or the victim) can only be definitively locked into ONE cell.
     // If they were already locked elsewhere, remove that old lock first.
     function clearExistingLockOf(name) {
-      for (const [k, v] of [...userLocked.entries()]) {
-        if (v === name) userLocked.delete(k);
+      const pos = lockedPositionOf(name);
+      if (!pos) return;
+
+      // 1. Limpiar las ✕ de la fila y columna de la posición anterior
+      for (let cc = 0; cc < puzzle.size; cc++) {
+        const k = `${pos.r},${cc}`;
+        if (!isCellAutoCrossedByOtherLock(pos.r, cc, name)) {
+          userCross.delete(k);
+        }
       }
+      for (let rr = 0; rr < puzzle.size; rr++) {
+        const k = `${rr},${pos.c}`;
+        if (!isCellAutoCrossedByOtherLock(rr, pos.c, name)) {
+          userCross.delete(k);
+        }
+      }
+
+      // 2. Eliminar el personaje de su casilla fijada anterior
+      userLocked.delete(`${pos.r},${pos.c}`);
     }
 
-function lockCell(r, c) {
+    function lockCell(r, c) {
       if (mode !== 'place' || !activeSuspect) return;
       const key = `${r},${c}`;
 
-      // 1. Si la casilla ya está fijada por este mismo personaje, la desbloqueamos
+      // 1. Si la casilla ya está fijada por este mismo personaje, la desblftakeSnapshot();
       if (userLocked.get(key) === activeSuspect) {
         takeSnapshot();
-        userLocked.delete(key);
+        clearExistingLockOf(activeSuspect);
         armedCell = null;
         renderBoard();
+        renderClues();
         return;
       }
 
       // 2. VALIDACIÓN: Comprobar si ya hay OTRO personaje en la misma fila (eje Y) o columna (eje X)
       for (const [lockedKey, lockedName] of userLocked.entries()) {
-        if (lockedName === activeSuspect) continue; // Ignoramos la posición anterior del propio personaje
+        if (lockedName === activeSuspect) continue;
 
         const [lr, lc] = lockedKey.split(',').map(Number);
         if (lr === r || lc === c) {
@@ -2279,20 +2458,19 @@ function lockCell(r, c) {
             setTimeout(() => { fb.innerHTML = ''; }, 3000);
           }
 
-          // --- Hacer vibrar la casilla del personaje que genera el conflicto ---
           const conflictingCell = document.querySelector(`.cell[data-key="${lr},${lc}"]`);
           if (conflictingCell) {
             conflictingCell.classList.remove('shake');
-            void conflictingCell.offsetWidth; // Forzar reflow para reanimar si se toca varias veces
+            void conflictingCell.offsetWidth;
             conflictingCell.classList.add('shake');
             setTimeout(() => conflictingCell.classList.remove('shake'), 400);
           }
 
-          return; // Cancela el bloqueo
+          return;
         }
       }
 
-      // 3. Si la posición es válida, fijamos al personaje
+      // 3. Fijar al personaje y borrar las ✕ de su ubicación anterior
       takeSnapshot();
       clearExistingLockOf(activeSuspect);
       userLocked.set(key, activeSuspect);
@@ -2300,7 +2478,16 @@ function lockCell(r, c) {
       userCross.delete(key);
       armedCell = null;
 
-      // 4. Marca automáticamente con ✕ el resto de casillas libres de su fila y columna
+      // Eliminar los marcadores/notas de este personaje de cualquier otra casilla del tablero
+      for (const [nKey, nSet] of userNotes.entries()) {
+        if (nSet.has(activeSuspect)) {
+          nSet.delete(activeSuspect);
+          if (nSet.size === 0) {
+            userNotes.delete(nKey);
+          }
+        }
+      }
+      // 4. Marca automáticamente con ✕ la nueva fila y columna
       for (let cc = 0; cc < puzzle.size; cc++) {
         if (cc === c || puzzle.obstacle[r][cc]) continue;
         const k2 = `${r},${cc}`;
@@ -2316,27 +2503,48 @@ function lockCell(r, c) {
         userCross.add(k2);
       }
       renderBoard();
+      renderClues();
     }
 
-function cellClick(r, c) {
-  const key = `${r},${c}`;
-  if (userLocked.has(key)) return; // Las celdas bloqueadas no cambian con toque corto
+    function cellClick(r, c) {
+      const key = `${r},${c}`;
+      if (userLocked.has(key)) return; // Las celdas bloqueadas no cambian con toque corto
 
-  if (mode === 'cross') {
-    takeSnapshot();
-    userNotes.delete(key);
-    if (userCross.has(key)) userCross.delete(key); else userCross.add(key);
-  } else {
-    if (!activeSuspect) return;
-    takeSnapshot();
-    userCross.delete(key);
-    const notes = userNotes.get(key) || new Set();
-    if (notes.has(activeSuspect)) notes.delete(activeSuspect); else notes.add(activeSuspect);
-    if (notes.size > 0) userNotes.set(key, notes); else userNotes.delete(key);
-  }
-  renderBoard();
-}
+      if (mode === 'cross') {
+        takeSnapshot();
+        userNotes.delete(key);
+        if (userCross.has(key)) userCross.delete(key); else userCross.add(key);
+      } else {
+        if (!activeSuspect) return;
 
+        // VALIDACIÓN: Si el personaje seleccionado ya está fijado definitivamente en alguna casilla, no permite ponerlo como posible/nota
+        const lockedPos = lockedPositionOf(activeSuspect);
+        if (lockedPos) {
+          const fb = document.getElementById('feedback');
+          if (fb) {
+            fb.innerHTML = `<div class="feedback bad">¡${activeSuspect} ya está fijado/a en el tablero!</div>`;
+            setTimeout(() => { fb.innerHTML = ''; }, 3000);
+          }
+
+          // Hace vibrar la casilla donde ya está fijado el personaje para destacarlo
+          const lockedCell = document.querySelector(`.cell[data-key="${lockedPos.r},${lockedPos.c}"]`);
+          if (lockedCell) {
+            lockedCell.classList.remove('shake');
+            void lockedCell.offsetWidth;
+            lockedCell.classList.add('shake');
+            setTimeout(() => lockedCell.classList.remove('shake'), 400);
+          }
+          return; // Cancela la anotación
+        }
+
+        takeSnapshot();
+        userCross.delete(key);
+        const notes = userNotes.get(key) || new Set();
+        if (notes.has(activeSuspect)) notes.delete(activeSuspect); else notes.add(activeSuspect);
+        if (notes.size > 0) userNotes.set(key, notes); else userNotes.delete(key);
+      }
+      renderBoard();
+    }
     function selectPerson(name) {
       activeSuspect = name;
       mode = 'place';
@@ -2356,6 +2564,7 @@ function cellClick(r, c) {
       armedCell = null;
       document.getElementById('undoBtn').disabled = undoStack.length === 0;
       renderBoard();
+      renderClues();
     };
 
     function avatarFallback(imgEl, name) {
@@ -2381,28 +2590,7 @@ function cellClick(r, c) {
       const list = document.getElementById('cluesList');
       list.innerHTML = '';
 
-      // Special card for the victim — clues never reveal them directly, but you
-      // still need a way to select them for placement once you've deduced it.
-      const vName = puzzle.victim.name;
-      const vCard = document.createElement('div');
-      vCard.className = 'clue-card' + (activeSuspect === vName ? ' active' : '');
-      const vHeader = document.createElement('div');
-      vHeader.className = 'card-header';
-      vHeader.appendChild(createAvatarImg(vName));
-      const vNameSpan = document.createElement('span');
-      vNameSpan.className = 'card-name';
-      vNameSpan.textContent = vName;
-      vHeader.appendChild(vNameSpan);
-      vCard.appendChild(vHeader);
-      const vLines = document.createElement('div');
-      vLines.className = 'clue-lines';
-      vLines.innerHTML = `<div class="clue-line">La víctima. Tócala para colocarla donde creas que apareció.</div>`;
-      vCard.appendChild(vLines);
-      vCard.onclick = () => selectPerson(vName);
-      list.appendChild(vCard);
-
-      // Group each clue under only ONE person: whichever character it refers to
-      // FIRST. So a two-person clue lives on a single card, not duplicated on both.
+      // 1. Agrupar las pistas por personaje
       const perPerson = {};
       puzzle.suspects.forEach(s => perPerson[s] = []);
       puzzle.clues.forEach(cl => {
@@ -2412,11 +2600,18 @@ function cellClick(r, c) {
         if (perPerson[primary]) perPerson[primary].push(cl.text);
       });
 
+      // 2. Renderizar primero las tarjetas de todos los sospechosos
       puzzle.suspects.forEach(name => {
         const texts = perPerson[name];
         const d = document.createElement('div');
+
+        // --- CAMBIO AQUÍ: Verificar si el personaje ya está colocado ---
+        const isPlaced = isSuspectFixed(name);
         const isActive = activeSuspect === name;
-        d.className = 'clue-card' + (isActive ? ' active' : '');
+
+        // Se añade la clase 'clue-disabled' si ya está colocado
+        d.className = 'clue-card' + (isActive ? ' active' : '') + (isPlaced ? ' clue-disabled' : '');
+
         const header = document.createElement('div');
         header.className = 'card-header';
         header.appendChild(createAvatarImg(name));
@@ -2425,20 +2620,19 @@ function cellClick(r, c) {
         nameSpan.textContent = name;
         header.appendChild(nameSpan);
         d.appendChild(header);
+
         const lines = document.createElement('div');
         lines.className = 'clue-lines';
-        
+
         if (texts.length === 0) {
           lines.innerHTML = `<div class="clue-line clue-line-empty">Sin pistas directas — descártalo por eliminación.</div>`;
         } else {
-          // Agrupar pistas que empiecen con "[Nombre] estuvo " para concatenarlas
           const prefix = `${name} estuvo `;
           const combinableClues = [];
           const otherClues = [];
 
           texts.forEach(t => {
             if (t.startsWith(prefix)) {
-              // Quitamos el prefijo y el punto final para unirlas limpiamente
               combinableClues.push(t.substring(prefix.length).replace(/\.$/, ''));
             } else {
               otherClues.push(t);
@@ -2447,7 +2641,6 @@ function cellClick(r, c) {
 
           let resultHTML = "";
 
-          // Unir las pistas combinables con comas y la conjunción "y"
           if (combinableClues.length > 0) {
             let combinedSentence = prefix;
             if (combinableClues.length === 1) {
@@ -2459,34 +2652,78 @@ function cellClick(r, c) {
             resultHTML += `<div class="clue-line">${combinedSentence}.</div>`;
           }
 
-          // Añadir cualquier otra pista que tenga una estructura diferente (ej. "Según los testigos...")
           otherClues.forEach(oc => {
             resultHTML += `<div class="clue-line">${oc}</div>`;
           });
 
           lines.innerHTML = resultHTML;
         }
-        
+
         d.appendChild(lines);
         d.onclick = () => selectPerson(name);
         list.appendChild(d);
       });
+
+      // 3. Renderizar la tarjeta de la víctima SIEMPRE AL FINAL
+      const vName = puzzle.victim.name;
+      const vCard = document.createElement('div');
+
+      // --- CAMBIO AQUÍ: Comprobar también para la víctima ---
+      const isVictimPlaced = isSuspectFixed(vName);
+      vCard.className = 'clue-card victim-card' + (activeSuspect === vName ? ' active' : '') + (isVictimPlaced ? ' clue-disabled' : '');
+
+      const vHeader = document.createElement('div');
+      vHeader.className = 'card-header';
+      vHeader.appendChild(createAvatarImg(vName));
+      const vNameSpan = document.createElement('span');
+      vNameSpan.className = 'card-name';
+      vNameSpan.textContent = vName;
+      vHeader.appendChild(vNameSpan);
+      vCard.appendChild(vHeader);
+
+      const vLines = document.createElement('div');
+      vLines.className = 'clue-lines';
+      vLines.innerHTML = `<div class="clue-line">La víctima. Tócala para colocarla donde creas que apareció.</div>`;
+      vCard.appendChild(vLines);
+      vCard.onclick = () => selectPerson(vName);
+
+      list.appendChild(vCard);
     }
 
+    // Función auxiliar para comprobar si un personaje está colocado en el mapa
+function isSuspectFixed(name) {
+  return lockedPositionOf(name) !== null;
+}
+
     function renderLegends() {
+      // 1. Obtener la lista completa de obstáculos y rasgos del mapa actual
+      const allObs = [...new Set(puzzle.mapDef.rooms.flatMap(r => typeof r === 'object' && r.obstacles ? r.obstacles : (puzzle.mapDef.obstacles || [])))];
+      const allFeat = [...new Set(puzzle.mapDef.rooms.flatMap(r => typeof r === 'object' && r.features ? r.features : (puzzle.mapDef.features || [])))];
+
+      // 2. Renderizar Obstáculos
       const obEl = document.getElementById('obstacleLegend');
-      obEl.innerHTML = '<strong style="width:100%">Obstáculos:</strong>' + puzzle.mapDef.obstacles.map(o => `<span>${o}</span>`).join('');
+      if (obEl) {
+        obEl.innerHTML = '<strong style="width:100%">Obstáculos:</strong>' + allObs.map(o => `<span>${o}</span>`).join('');
+      }
+
+      // 3. Renderizar Rasgos
       const feEl = document.getElementById('featureLegend');
-      feEl.innerHTML = '<strong style="width:100%">Rasgos:</strong>' + puzzle.mapDef.features.map(f => `<span>${f}</span>`).join('');
+      if (feEl) {
+        feEl.innerHTML = '<strong style="width:100%">Objetos Claves:</strong>' + allFeat.map(f => `<span>${f}</span>`).join('');
+      }
+
+      // 4. Renderizar Abreviaturas de las áreas/salas
       const roomsEl = document.getElementById('roomsLegend');
-      roomsEl.innerHTML = '';
-      puzzle.roomList.forEach((name, i) => {
-        const chip = document.createElement('span');
-        chip.className = 'room-chip';
-        chip.style.background = ROOM_COLORS[i % ROOM_COLORS.length];
-        chip.textContent = `${puzzle.roomCodes[i]} — ${name}`;
-        roomsEl.appendChild(chip);
-      });
+      if (roomsEl) {
+        roomsEl.innerHTML = '<strong style="width:100%; font-size: 11px; color: #5c5340; margin-bottom: 2px;">Abreviaturas de las áreas:</strong>';
+        puzzle.roomList.forEach((name, i) => {
+          const chip = document.createElement('span');
+          chip.className = 'room-chip';
+          chip.style.background = ROOM_COLORS[i % ROOM_COLORS.length];
+          chip.textContent = `${puzzle.roomCodes[i]} = ${name}`;
+          roomsEl.appendChild(chip);
+        });
+      }
     }
 
     function lockedPositionOf(name) {
@@ -2499,12 +2736,14 @@ function cellClick(r, c) {
     function updateZoomDisplay() {
       document.getElementById('zoomLevel').textContent = Math.round(boardZoom * 100) + '%';
     }
+
     function updateZoom() {
-      document.getElementById('zoomLevel').textContent = Math.round(boardZoom * 100) + '%';
+      updateZoomDisplay();
       const board = document.getElementById('board');
       if (board) {
-        board.style.transform = `scale(${boardZoom})`;
+        board.style.transform = 'none'; // Limpia cualquier escala CSS residual
       }
+      renderBoard();
     }
 
     let initialPinchDist = null;
@@ -2545,15 +2784,13 @@ function cellClick(r, c) {
     }
     document.getElementById('zoomInBtn').onclick = () => {
       boardZoom = Math.min(ZOOM_MAX, +(boardZoom + ZOOM_STEP).toFixed(2));
-      updateZoomDisplay();
-      renderBoard();
-    };
-    document.getElementById('zoomOutBtn').onclick = () => {
-      boardZoom = Math.max(ZOOM_MIN, +(boardZoom - ZOOM_STEP).toFixed(2));
-      updateZoomDisplay();
-      renderBoard();
+      updateZoom();
     };
 
+    document.getElementById('zoomOutBtn').onclick = () => {
+      boardZoom = Math.max(ZOOM_MIN, +(boardZoom - ZOOM_STEP).toFixed(2));
+      updateZoom();
+    };
     document.getElementById('checkBtn').onclick = () => {
       const fb = document.getElementById('feedback');
       const allNames = [...puzzle.suspects, puzzle.victim.name];
@@ -2619,6 +2856,7 @@ function cellClick(r, c) {
       armedCell = null;
       document.getElementById('feedback').innerHTML = '';
       renderBoard();
+      renderClues();
     };
 
     document.getElementById('backBtn').onclick = () => {
@@ -2700,31 +2938,61 @@ function cellClick(r, c) {
     document.getElementById('panRightBtn').onclick = () => { if (boardWrap) boardWrap.scrollBy({ left: STEP_PAN, behavior: 'smooth' }); };
     document.getElementById('panUpBtn').onclick = () => { if (boardWrap) boardWrap.scrollBy({ top: -STEP_PAN, behavior: 'smooth' }); };
     document.getElementById('panDownBtn').onclick = () => { if (boardWrap) boardWrap.scrollBy({ top: STEP_PAN, behavior: 'smooth' }); };
-
-    document.getElementById('centerFitBtn').onclick = () => {
+    // Función reutilizable para ajustar y centrar el mapa
+    function adjustMap() {
       if (!boardWrap || !puzzle) return;
       const boardEl = document.getElementById('board');
       if (!boardEl) return;
 
-      // Calcular zoom para ajustar al ancho y alto del contenedor
-      const wrapW = boardWrap.clientWidth - 20;
-      const wrapH = boardWrap.clientHeight - 20;
-      const boardW = boardEl.scrollWidth || (puzzle.size * 45);
-      const boardH = boardEl.scrollHeight || (puzzle.size * 45);
+      const wrapW = boardWrap.clientWidth;
+      const wrapH = boardWrap.clientHeight;
 
-      const scaleW = wrapW / boardW;
-      const scaleH = wrapH / boardH;
+      const baseCellPx = Math.max(32, Math.min(48, Math.floor(358 / puzzle.size)));
+      const gap = 3; // Hueco entre celdas
+      const baseBoardW = puzzle.size * baseCellPx + (puzzle.size - 1) * gap;
+      const baseBoardH = puzzle.size * baseCellPx + (puzzle.size - 1) * gap;
+
+      const scaleW = (wrapW - 16) / baseBoardW;
+      const scaleH = (wrapH - 16) / baseBoardH;
       let bestScale = Math.min(scaleW, scaleH, 1.4);
       bestScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, bestScale));
 
-      boardZoom = bestScale;
-      updateZoom();
+      boardZoom = +bestScale.toFixed(2);
+      updateZoom(); // Renderiza el tablero con las medidas físicas exactas
 
-      // Centrar scroll
-      boardWrap.scrollLeft = (boardEl.scrollWidth * boardZoom - wrapW) / 2;
-      boardWrap.scrollTop = (boardEl.scrollHeight * boardZoom - wrapH) / 2;
-    };
+      setTimeout(() => {
+        boardWrap.scrollLeft = Math.max(0, (boardEl.offsetWidth - wrapW) / 2);
+        boardWrap.scrollTop = Math.max(0, (boardEl.offsetHeight - wrapH) / 2);
+      }, 10);
+    }
+
+    // Evento para el botón
+    const centerBtn = document.getElementById('centerFitBtn');
+    if (centerBtn) {
+      centerBtn.onclick = adjustMap;
+    }
     // Ejemplo de aplicación dentro de tu bucle o función que crea las celdas (.cell)
+    function fixSuspectPosition(suspect, r, c) {
+      // 1. Asignar la posición fija definitiva
+      fixedPositions[suspect] = { r, c };
+
+      // 2. Eliminar todas las marcas/anotaciones posibles de este personaje en el mapa
+      for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+          if (cellMarks[row][col]) {
+            // Si usas un Set o Array para guardar marcas por casilla:
+            cellMarks[row][col] = cellMarks[row][col].filter(s => s !== suspect);
+
+            // O si usas un objeto tipo { 'SospechosoA': true }:
+            // delete cellMarks[row][col][suspect];
+          }
+        }
+      }
+
+      // 3. Re-renderizar el mapa y actualizar el estado visual de las pistas
+      renderBoard();
+      renderClues();
+    }
 
   </script>
 </body>
