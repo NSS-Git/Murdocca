@@ -867,6 +867,38 @@
       padding: 12px;
     }
 
+    .case-controls {
+      margin-top: 20px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .case-controls input {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 2px solid var(--paper-line);
+      border-radius: 5px;
+      font: inherit;
+      background: var(--paper2);
+      color: var(--text-dark);
+    }
+
+    .case-status {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #6a5f47;
+    }
+
+    .case-actions {
+      flex-wrap: wrap;
+    }
+
+    .case-actions .big-btn {
+      flex: 1 1 140px;
+    }
+
     .secondary {
       background: var(--teal);
       box-shadow: 0 4px 0 #2a4444;
@@ -922,6 +954,9 @@
       max-width: 420px;
       width: 100%;
       padding: 26px 22px;
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+      box-sizing: border-box;
       text-align: center;
       box-shadow: var(--shadow);
       border-top: 6px solid var(--blood);
@@ -949,6 +984,21 @@
       font-size: 14px;
       line-height: 1.5;
       margin-bottom: 18px;
+    }
+
+    .modal > .big-btn {
+      margin-top: 10px;
+    }
+
+    .explanation-list {
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.6;
+      padding-left: 22px;
+    }
+
+    .explanation-list li {
+      margin-bottom: 12px;
     }
 
     .modal .killer-name {
@@ -1047,6 +1097,13 @@
       <div class="roster" id="roster"></div>
 
       <button class="big-btn" id="startBtn" disabled>▸ ABRIR EXPEDIENTE</button>
+      <div class="case-controls">
+        <button class="big-btn secondary hidden" id="resumeBtn">Continuar partida guardada</button>
+        <label for="caseCodeInput">Abrir expediente con un código</label>
+        <input id="caseCodeInput" autocomplete="off" spellcheck="false" placeholder="Pega el código del caso">
+        <button class="big-btn secondary" id="openCodeBtn">Abrir expediente con un código</button>
+        <div class="case-status" id="codeStatus" role="status"></div>
+      </div>
     </div>
 
     <!-- GAME -->
@@ -1092,7 +1149,15 @@
           · Toque corto = anotación (o arrastra el dedo por varias casillas) 
           · Para fijar la posición definitiva: mantenla pulsada 
           · Para desfijar la posición definitiva: mantenla pulsada habiendo seleccionado previamente ese mismo personaje </div>
+        <div class="hint-text" id="locationRule"></div>
+        <p class="case-status" id="gameSaveStatus" role="status"></p>
         <div id="feedback"></div>
+        <div class="actions-row case-actions">
+          <button class="big-btn secondary" id="hintBtn">Pista</button>
+          <button class="big-btn secondary" id="shareBtn">Compartir expediente</button>
+          <button class="big-btn secondary hidden" id="explainBtn">Cómo se resuelve</button>
+          <button class="big-btn hidden" id="closeCaseBtn">Cerrar caso</button>
+        </div>
 
         <div class="section-title" style="margin-top:16px;">Pistas del expediente</div>
         <div id="cluesList"></div>
@@ -1109,11 +1174,14 @@
       </div>
     </div>
 
+    <p class="case-status" id="saveStatus" role="status" style="color:var(--paper); text-align:center;"></p>
     <footer class="credits">Murdocca</footer>
   </div>
 
   <div id="modalRoot"></div>
 
+  <script src="./case-tools.js"></script>
+  <script src="./deduction-tools.js"></script>
   <script>
     /* =========================================================================
        DATA
@@ -1237,6 +1305,14 @@
     let armedCell = null;   // "r,c" of the cell that was tapped once — must hold THIS cell next to lock it
     let boardZoom = 1;      // map zoom level, adjustable with the +/- buttons
     const ZOOM_MIN = 0.6, ZOOM_MAX = 1.8, ZOOM_STEP = 0.15;
+    let caseRandom = Math.random;
+    let caseCode = '';
+    let gameStatus = 'playing';
+    let hintSignature = '', hintStage = 0, cachedHint = null;
+    let saveTimeout = null;
+    let restoringGame = false;
+    let savedGame = null;
+    const SAVE_KEY = 'murdocca.partida.v1';
 
     /* =========================================================================
        RENDER SETUP SCREEN
@@ -1356,8 +1432,8 @@
     /* =========================================================================
        GENERATION
        ========================================================================= */
-    function shuffle(arr) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
-    function rnd(n) { return Math.floor(Math.random() * n); }
+    function shuffle(arr) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(caseRandom() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
+    function rnd(n) { return Math.floor(caseRandom() * n); }
     function buildRooms(size, roomNames) {
       const targetCount = roomNames.length;
       const roomGrid = Array.from({ length: size }, () => Array(size).fill(-1));
@@ -1425,7 +1501,7 @@
             // Doble comprobación por si otra sala la ocupó en este mismo microciclo
             if (roomGrid[nr][nc] === -1) {
               // Añadimos un factor de aleatoriedad alta para que no crezcan de forma uniforme
-              if (Math.random() < 0.75) {
+              if (caseRandom() < 0.75) {
                 roomGrid[nr][nc] = id;
                 room.cells.push([nr, nc]);
                 updateBounds(room, nr, nc);
@@ -1708,11 +1784,10 @@
         // --- A. RASGOS / OBJETOS (FEATURE) ---
         // Los objetos únicos también sirven de referencia, igual que los repetidos.
         if (f) {
-          const cleanFeature = f.replace(/^\S+\s/, '');
           pool.push({
             type: 'feature',
             subject: s,
-            text: `${s} estuvo sobre ${cleanFeature} en ${roomList[room]}.`,
+            text: MurdoccaCases.featureText(s, f, roomList[room]),
             apply: (dom) => {
               dom[s] = dom[s].filter(([r, c]) => feature[r][c] === f && roomGrid[r][c] === room);
             }
@@ -1780,9 +1855,10 @@
           if (!obs) return;
 
           const cleanObs = obs.replace(/^\S+\s/, '');
+          const objectReference = cleanObs.startsWith('el ') ? `al ${cleanObs.slice(3)}` : `a ${cleanObs}`;
           const besideText = isCommonItem(obs)
-            ? `${s} estuvo junto a ${cleanObs} en ${roomList[room]}.`
-            : `${s} estuvo junto a ${cleanObs}.`;
+            ? `${s} estaba junto ${objectReference} en ${roomList[room]}.`
+            : `${s} estaba junto ${objectReference}.`;
 
           pool.push({
             type: 'beside',
@@ -1995,40 +2071,337 @@
        GAME START / RENDER
        ========================================================================= */
     function startGame() {
-      const p = generatePuzzle(selectedMap, selectedDiff);
-      if (!p) { alert('No se pudo generar el caso, inténtalo de nuevo.'); return; }
+      openCase(MurdoccaCases.encode(selectedMap.id, selectedDiff.id, MurdoccaCases.newSeed()));
+    }
+
+    function generateCase(code) {
+      const spec = MurdoccaCases.decode(code);
+      const map = MAPS.find(m => m.id === spec.mapId);
+      const diff = DIFFICULTIES.find(d => d.id === spec.diffId);
+      if (!map || !diff) throw new Error('El código pertenece a un escenario o nivel desconocido.');
+      caseRandom = MurdoccaCases.createRandom(spec.seed);
+      try {
+        const p = generatePuzzle(map, diff);
+        if (!p) throw new Error('No se pudo generar este expediente.');
+        p.victim = nextVictim();
+        p.roomCodes = p.roomList.map(computeRoomCode);
+        return p;
+      } finally {
+        caseRandom = Math.random;
+      }
+    }
+
+    function openCase(code, saved = null) {
+      let p, state;
+      try {
+        p = generateCase(code);
+        if (saved) state = decodeSavedState(saved, p);
+      } catch (error) {
+        document.getElementById('codeStatus').textContent = error.message;
+        return false;
+      }
+      clearInterval(timerInterval);
+      restoringGame = true;
       puzzle = p;
-      puzzle.victim = nextVictim();
-      puzzle.roomCodes = puzzle.roomList.map(computeRoomCode);
-      userNotes = new Map();
-      userCross = new Set();
-      userLocked = new Map();
-      undoStack = [];
+      selectedMap = p.mapDef;
+      selectedDiff = p.diff;
+      [...mapGrid.children].forEach((card, i) => card.classList.toggle('selected', MAPS[i] === selectedMap));
+      [...diffGrid.children].forEach((card, i) => card.classList.toggle('selected', DIFFICULTIES[i] === selectedDiff));
+      checkReady();
+      const spec = MurdoccaCases.decode(code);
+      caseCode = MurdoccaCases.encode(spec.mapId, spec.diffId, spec.seed);
+      userNotes = state ? state.notes : new Map();
+      userCross = state ? state.cross : new Set();
+      userLocked = state ? state.locked : new Map();
+      undoStack = state ? state.undo : [];
       armedCell = null;
-      boardZoom = 1;
+      boardZoom = saved ? saved.zoom : 1;
+      activeSuspect = saved ? saved.active : puzzle.suspects[0];
+      mode = saved ? saved.mode : 'place';
+      seconds = saved ? saved.seconds : 0;
+      gameStatus = saved ? saved.status : 'playing';
+      hintSignature = saved ? saved.hintSignature : '';
+      hintStage = saved ? saved.hintStage : 0;
+      cachedHint = null;
       updateZoomDisplay();
-      activeSuspect = puzzle.suspects[0];
-      mode = "place";
-      seconds = 0;
+      updateTimerDisplay();
+      document.getElementById('modePlace').classList.toggle('active', mode === 'place');
+      document.getElementById('modeCross').classList.toggle('active', mode === 'cross');
+      document.getElementById('locationRule').textContent = MurdoccaCases.locationRule;
+      document.getElementById('explainBtn').classList.toggle('hidden', gameStatus === 'playing');
+      document.getElementById('closeCaseBtn').classList.toggle('hidden', gameStatus === 'playing');
+      document.getElementById('codeStatus').textContent = '';
       document.getElementById('setup').classList.add('hidden');
       document.getElementById('game').classList.remove('hidden');
-      document.getElementById('undoBtn').disabled = true;
+      document.getElementById('undoBtn').disabled = undoStack.length === 0;
       document.getElementById('feedback').innerHTML = ''; renderBoard();
       renderClues();
       renderLegends();
+      restoringGame = false;
       requestAnimationFrame(() => {
-        adjustMap(); // Invoca la función ligada a tu botón de ajustar mapa
+        if (!saved) adjustMap();
       });
-      startTimer();
+      if (gameStatus === 'playing') startTimer();
+      saveGame();
+      return true;
+    }
+
+    // One local slot; a versioned seed reproduces the case without saved clue functions.
+    function encodeMarks(notes, cross, locked, status) {
+      return { notes: [...notes].map(([key, names]) => [key, [...names]]), cross: [...cross], locked: [...locked], status };
+    }
+
+    function setSaveStatus(message) {
+      document.getElementById('saveStatus').textContent = message;
+      document.getElementById('gameSaveStatus').textContent = message;
+    }
+
+    function requestSave() {
+      if (!puzzle || restoringGame) return;
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveGame, 100);
+    }
+
+    function saveGame() {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+      if (!puzzle || restoringGame) return;
+      const record = {
+        version: 1, code: caseCode,
+        ...encodeMarks(userNotes, userCross, userLocked, gameStatus),
+        undo: undoStack.map(s => encodeMarks(s.notes, s.cross, s.locked, s.status)),
+        seconds, active: activeSuspect, mode, zoom: boardZoom, hintSignature, hintStage
+      };
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(record));
+        savedGame = record;
+        document.getElementById('resumeBtn').classList.remove('hidden');
+        setSaveStatus('Partida guardada automáticamente en este navegador.');
+      } catch {
+        setSaveStatus('No se puede guardar en este navegador. No cierres esta pestaña si quieres conservar la partida.');
+      }
+    }
+
+    function decodeSavedState(record, p) {
+      const fail = () => { throw new Error('La partida guardada no es válida. Puedes abrir un expediente nuevo.'); };
+      const names = new Set([...p.suspects, p.victim.name]);
+      if (!record || record.version !== 1 || !Number.isSafeInteger(record.seconds) || record.seconds < 0 ||
+          !names.has(record.active) || !['place', 'cross'].includes(record.mode) ||
+          !Number.isFinite(record.zoom) || record.zoom < ZOOM_MIN || record.zoom > ZOOM_MAX ||
+          typeof record.hintSignature !== 'string' || record.hintSignature.length > 2048 ||
+          !Number.isInteger(record.hintStage) || record.hintStage < 0 || record.hintStage > 2 ||
+          !Array.isArray(record.undo) || record.undo.length > UNDO_MAX) fail();
+      const validCell = key => {
+        if (typeof key !== 'string' || !/^\d+,\d+$/.test(key)) return false;
+        const [r, c] = key.split(',').map(Number);
+        return r >= 0 && r < p.size && c >= 0 && c < p.size && !p.obstacle[r][c];
+      };
+      function marks(raw) {
+        if (!raw || !['playing', 'solved', 'revealed'].includes(raw.status) ||
+            !Array.isArray(raw.notes) || !Array.isArray(raw.cross) || !Array.isArray(raw.locked) ||
+            raw.notes.length > p.size * p.size || raw.cross.length > p.size * p.size || raw.locked.length > names.size) fail();
+        for (const entry of raw.notes) {
+          if (!Array.isArray(entry) || entry.length !== 2 || !validCell(entry[0]) ||
+              !Array.isArray(entry[1]) || !entry[1].length || entry[1].length > names.size ||
+              entry[1].some(n => !names.has(n))) fail();
+        }
+        if (raw.cross.some(key => !validCell(key))) fail();
+        const seenNames = new Set(), rows = new Set(), cols = new Set();
+        for (const entry of raw.locked) {
+          if (!Array.isArray(entry) || entry.length !== 2 || !validCell(entry[0]) || !names.has(entry[1]) || seenNames.has(entry[1])) fail();
+          const [r, c] = entry[0].split(',').map(Number);
+          if (rows.has(r) || cols.has(c)) fail();
+          rows.add(r); cols.add(c); seenNames.add(entry[1]);
+        }
+        if (raw.status !== 'playing') {
+          if (raw.locked.length !== names.size) fail();
+          for (const [key, name] of raw.locked) {
+            const truth = name === p.victim.name ? p.victimCell : p.solution[name];
+            if (key !== `${truth.r},${truth.c}`) fail();
+          }
+        }
+        return { notes: new Map(raw.notes.map(([key, candidates]) => [key, new Set(candidates)])),
+          cross: new Set(raw.cross), locked: new Map(raw.locked), status: raw.status };
+      }
+      return { ...marks(record), undo: record.undo.map(marks) };
+    }
+
+    function loadSavedGame() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const record = JSON.parse(raw);
+        if (record.version !== 1) throw new Error('Esta partida guardada pertenece a otra versión.');
+        MurdoccaCases.decode(record.code);
+        savedGame = record;
+        document.getElementById('resumeBtn').classList.remove('hidden');
+        setSaveStatus('Tienes una partida guardada. Pulsa «Continuar partida guardada».');
+      } catch {
+        setSaveStatus('No se ha podido leer la partida guardada. Puedes abrir un caso nuevo.');
+      }
+    }
+
+    function textModal(title, paragraphs) {
+      const root = document.getElementById('modalRoot');
+      root.replaceChildren();
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      const heading = document.createElement('h2');
+      heading.textContent = title;
+      modal.appendChild(heading);
+      paragraphs.forEach(text => {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = text;
+        modal.appendChild(paragraph);
+      });
+      overlay.appendChild(modal);
+      root.appendChild(overlay);
+      return modal;
+    }
+
+    function modalButton(modal, text, id, action, secondary = false) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.id = id;
+      button.className = 'big-btn' + (secondary ? ' secondary' : '');
+      button.textContent = text;
+      button.onclick = action;
+      modal.appendChild(button);
+      return button;
+    }
+
+    function closeTextModal() {
+      document.getElementById('modalRoot').replaceChildren();
+    }
+
+    function showShareModal() {
+      const modal = textModal('El mismo expediente para todas', [
+        'Comparte este código. Al abrirlo se generan el mismo plano, los mismos personajes y las mismas pistas, sin compartir tus anotaciones ni tu solución.',
+        'Debe abrirse en esta misma versión de Murdocca.'
+      ]);
+      const input = document.createElement('input');
+      input.id = 'shareCode';
+      input.value = caseCode;
+      input.readOnly = true;
+      input.setAttribute('aria-label', 'Código del expediente');
+      input.style.cssText = 'width:100%;box-sizing:border-box;padding:12px;font-family:monospace;';
+      modal.appendChild(input);
+      const status = document.createElement('p');
+      status.id = 'copyStatus';
+      status.setAttribute('role', 'status');
+      modal.appendChild(status);
+      modalButton(modal, 'Copiar código', 'copyCodeBtn', async () => {
+        try {
+          await navigator.clipboard.writeText(caseCode);
+          status.textContent = 'Código copiado.';
+        } catch {
+          input.focus();
+          input.select();
+          status.textContent = 'No se pudo acceder al portapapeles. El código está seleccionado para que lo copies manualmente.';
+        }
+      });
+      modalButton(modal, 'Cerrar', 'closeShareBtn', closeTextModal, true);
+    }
+
+    function showHint() {
+      if (gameStatus !== 'playing') { showExplanation(); return; }
+      const signature = caseCode + JSON.stringify([...userLocked].sort((a, b) => a[0].localeCompare(b[0])));
+      if (signature !== hintSignature) { hintSignature = signature; hintStage = 0; cachedHint = null; }
+      const button = document.getElementById('hintBtn');
+      button.disabled = true;
+      try {
+        if (!cachedHint) cachedHint = MurdoccaDeduction.analyze(puzzle, userLocked);
+        const result = cachedHint;
+        if (result.status === 'contradiction') {
+          const modal = textModal('Revisa las posiciones fijadas', [
+            'Las posiciones que has fijado no pueden cumplir simultáneamente las pistas y las reglas. Las anotaciones y las cruces no se usan como hechos para las ayudas.',
+            result.reason || result.steps.at(-1)?.reason || 'Desfija alguna de las posiciones para revisar las posibilidades.'
+          ]);
+          modalButton(modal, 'Volver al tablero', 'closeHintBtn', closeTextModal, true);
+          modalButton(modal, 'Mostrar solución completa…', 'hintRevealBtn', confirmReveal);
+        } else if (result.hint) {
+          const hint = result.hint;
+          const modal = textModal(['Qué revisar', 'Qué puedes descartar', 'La deducción completa'][hintStage],
+            [[hint.focus, hint.exclusion, hint.deduction][hintStage]]);
+          if (hintStage < 2) modalButton(modal, 'Una ayuda más concreta', 'nextHintBtn', () => {
+            hintStage++;
+            saveGame();
+            showHint();
+          });
+          modalButton(modal, 'Seguir jugando', 'closeHintBtn', closeTextModal, true);
+          modalButton(modal, 'Mostrar solución completa…', 'hintRevealBtn', confirmReveal);
+        } else {
+          const modal = textModal('Comprueba el expediente', ['Las posiciones fijadas cumplen las pistas y las reglas. Puedes comprobar la solución para cerrar el caso.']);
+          modalButton(modal, 'Volver al tablero', 'closeHintBtn', closeTextModal, true);
+        }
+        saveGame();
+      } catch (error) {
+        const modal = textModal('No se pudo calcular la ayuda', [error.message]);
+        modalButton(modal, 'Seguir jugando', 'closeHintBtn', closeTextModal, true);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function confirmReveal() {
+      const modal = textModal('¿Revelar el expediente completo?', [
+        'Se colocarán todos los personajes y se mostrará quién estaba a solas con Mocca. La partida quedará marcada como solución revelada.'
+      ]);
+      modalButton(modal, 'No, seguir jugando', 'cancelRevealBtn', closeTextModal, true);
+      modalButton(modal, 'Sí, revelar solución', 'confirmRevealBtn', () => { closeTextModal(); revealSolution(); });
+    }
+
+    function showExplanation() {
+      if (gameStatus === 'playing') return;
+      try {
+        const steps = MurdoccaDeduction.explain(puzzle);
+        const modal = textModal('Cómo se resuelve este expediente', [
+          'Esta explicación parte de las pistas y las reglas, no de tus anotaciones. Cuando hace falta probar alternativas, se indica expresamente.'
+        ]);
+        const list = document.createElement('ol');
+        list.className = 'explanation-list';
+        steps.forEach(text => {
+          const item = document.createElement('li');
+          item.textContent = text;
+          list.appendChild(item);
+        });
+        modal.appendChild(list);
+        modalButton(modal, 'Volver al caso', 'closeExplanationBtn', closeTextModal, true);
+      } catch (error) {
+        const modal = textModal('No se pudo calcular la explicación', [error.message]);
+        modalButton(modal, 'Volver al caso', 'closeExplanationBtn', closeTextModal, true);
+      }
+    }
+
+    document.getElementById('resumeBtn').onclick = () => { if (savedGame) openCase(savedGame.code, savedGame); };
+    document.getElementById('openCodeBtn').onclick = () => openCase(document.getElementById('caseCodeInput').value.trim());
+    document.getElementById('caseCodeInput').onkeydown = event => {
+      if (event.key === 'Enter') document.getElementById('openCodeBtn').click();
+    };
+    document.getElementById('shareBtn').onclick = showShareModal;
+    document.getElementById('hintBtn').onclick = showHint;
+    document.getElementById('explainBtn').onclick = showExplanation;
+    document.getElementById('closeCaseBtn').onclick = confirmCloseCase;
+    window.addEventListener('pagehide', saveGame);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
+
+    function updateTimerDisplay() {
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = `${m}:${s}`;
     }
 
     function startTimer() {
       clearInterval(timerInterval);
       timerInterval = setInterval(() => {
+        if (document.hidden) return;
         seconds++;
-        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-        const s = String(seconds % 60).padStart(2, '0');
-        document.getElementById('timer').textContent = `${m}:${s}`;
+        updateTimerDisplay();
+        requestSave();
       }, 1000);
     }
 
@@ -2172,6 +2545,8 @@
         boardWrap.scrollLeft = savedScrollLeft;
         boardWrap.scrollTop = savedScrollTop;
       }
+      if (gameStatus !== 'playing') markSolvedOnBoard();
+      requestSave();
     }
     function renderRoomLabels(cellPx) {
       const board = document.getElementById('board');
@@ -2419,7 +2794,8 @@
       undoStack.push({
         notes: new Map([...userNotes].map(([k, v]) => [k, new Set(v)])),
         cross: new Set(userCross),
-        locked: new Map(userLocked)
+        locked: new Map(userLocked),
+        status: gameStatus
       });
       if (undoStack.length > UNDO_MAX) undoStack.shift();
       const undoBtn = document.getElementById('undoBtn');
@@ -2461,6 +2837,7 @@
     }
 
     function lockCell(r, c) {
+      if (gameStatus !== 'playing') return;
       if (mode !== 'place' || !activeSuspect) return;
       const key = `${r},${c}`;
 
@@ -2536,6 +2913,7 @@
     }
 
     function cellClick(r, c) {
+      if (gameStatus !== 'playing') return;
       const key = `${r},${c}`;
       if (userLocked.has(key)) return; // Las celdas bloqueadas no cambian con toque corto
 
@@ -2577,12 +2955,13 @@
     function selectPerson(name) {
       activeSuspect = name;
       mode = 'place';
+      requestSave();
       document.getElementById('modePlace').classList.add('active');
       document.getElementById('modeCross').classList.remove('active');
       renderClues();
     }
 
-    document.getElementById('modePlace').onclick = () => { mode = 'place'; document.getElementById('modePlace').classList.add('active'); document.getElementById('modeCross').classList.remove('active'); };
+    document.getElementById('modePlace').onclick = () => { mode = 'place'; document.getElementById('modePlace').classList.add('active'); document.getElementById('modeCross').classList.remove('active'); requestSave(); };
     document.getElementById('modeCross').onclick = () => { mode = 'cross'; armedCell = null; document.getElementById('modeCross').classList.add('active'); document.getElementById('modePlace').classList.remove('active'); renderBoard(); };
     document.getElementById('undoBtn').onclick = () => {
       if (undoStack.length === 0) return;
@@ -2590,6 +2969,10 @@
       userNotes = prev.notes;
       userCross = prev.cross;
       userLocked = prev.locked;
+      gameStatus = prev.status;
+      document.getElementById('explainBtn').classList.toggle('hidden', gameStatus === 'playing');
+      document.getElementById('closeCaseBtn').classList.toggle('hidden', gameStatus === 'playing');
+      if (gameStatus === 'playing') startTimer(); else clearInterval(timerInterval);
       armedCell = null;
       document.getElementById('undoBtn').disabled = undoStack.length === 0;
       renderBoard();
@@ -2654,38 +3037,20 @@
         lines.className = 'clue-lines';
 
         if (texts.length === 0) {
-          lines.innerHTML = `<div class="clue-line clue-line-empty">Sin pistas directas — descártalo por eliminación.</div>`;
+          const line = document.createElement('div');
+          line.className = 'clue-line clue-line-empty';
+          line.textContent = 'Sin pistas directas — descártalo por eliminación.';
+          lines.appendChild(line);
         } else {
-          const prefix = `${name} estuvo `;
-          const combinableClues = [];
-          const otherClues = [];
-
-          texts.forEach(t => {
-            if (t.startsWith(prefix)) {
-              combinableClues.push(t.substring(prefix.length).replace(/\.$/, ''));
-            } else {
-              otherClues.push(t);
-            }
+          texts.forEach(text => {
+            const line = document.createElement('div');
+            line.className = 'clue-line';
+            // El encabezado identifica al personaje; conservar los nombres comparados.
+            const prefix = `${name} `;
+            const sentence = text.startsWith(prefix) ? text.slice(prefix.length) : text;
+            line.textContent = sentence.charAt(0).toUpperCase() + sentence.slice(1);
+            lines.appendChild(line);
           });
-
-          let resultHTML = "";
-
-          if (combinableClues.length > 0) {
-            let combinedSentence = prefix;
-            if (combinableClues.length === 1) {
-              combinedSentence += combinableClues[0];
-            } else {
-              const last = combinableClues.pop();
-              combinedSentence += combinableClues.join(", ") + " y " + last;
-            }
-            resultHTML += `<div class="clue-line">${combinedSentence}.</div>`;
-          }
-
-          otherClues.forEach(oc => {
-            resultHTML += `<div class="clue-line">${oc}</div>`;
-          });
-
-          lines.innerHTML = resultHTML;
         }
 
         d.appendChild(lines);
@@ -2832,6 +3197,10 @@ function isSuspectFixed(name) {
       }).length;
 
       if (correct === total) {
+        gameStatus = 'solved';
+        document.getElementById('explainBtn').classList.remove('hidden');
+        document.getElementById('closeCaseBtn').classList.remove('hidden');
+        saveGame();
         clearInterval(timerInterval);
         showSolvedModal();
         return;
@@ -2845,25 +3214,19 @@ function isSuspectFixed(name) {
     };
 
     function askRevealSolution() {
-      const root = document.getElementById('modalRoot');
-      root.innerHTML = `
-    <div class="modal-overlay">
-      <div class="modal">
-        <div class="stamp">EXPEDIENTE INCOMPLETO</div>
-        <h2>Algo no cuadra…</h2>
-        <p>Hay errores en tu tablero.<br>¿Quieres que te muestre la solución?</p>
-        <div style="display:flex; gap:10px; margin-top:6px;">
-          <button class="big-btn secondary" id="declineRevealBtn" style="flex:1;">Seguir intentando</button>
-          <button class="big-btn" id="confirmRevealBtn" style="flex:1;">Mostrar solución</button>
-        </div>
-      </div>
-    </div>`;
-      document.getElementById('declineRevealBtn').onclick = () => { root.innerHTML = ''; };
-      document.getElementById('confirmRevealBtn').onclick = () => { root.innerHTML = ''; revealSolution(); };
+      const modal = textModal('El expediente aún no está resuelto', [
+        'Puedes seguir jugando, pedir una pista gradual o revelar la solución completa.'
+      ]);
+      modalButton(modal, 'Seguir intentando', 'declineRevealBtn', closeTextModal, true);
+      modalButton(modal, 'Pista', 'reviewHintBtn', showHint, true);
+      modalButton(modal, 'Mostrar solución completa…', 'requestRevealBtn', confirmReveal);
     }
 
     function revealSolution() {
       clearInterval(timerInterval);
+      gameStatus = 'revealed';
+      document.getElementById('explainBtn').classList.remove('hidden');
+      document.getElementById('closeCaseBtn').classList.remove('hidden');
       userNotes = new Map();
       userCross = new Set();
       userLocked = new Map();
@@ -2874,11 +3237,20 @@ function isSuspectFixed(name) {
       userLocked.set(`${puzzle.victimCell.r},${puzzle.victimCell.c}`, puzzle.victim.name);
       document.getElementById('feedback').innerHTML = '';
       renderBoard();
+      renderClues();
+      saveGame();
       showSolvedModal(true);
     }
 
     document.getElementById('resetBtn').onclick = () => {
       takeSnapshot();
+      gameStatus = 'playing';
+      hintSignature = '';
+      hintStage = 0;
+      cachedHint = null;
+      document.getElementById('explainBtn').classList.add('hidden');
+      document.getElementById('closeCaseBtn').classList.add('hidden');
+      startTimer();
       userNotes = new Map();
       userCross = new Set();
       userLocked = new Map();
@@ -2890,9 +3262,61 @@ function isSuspectFixed(name) {
 
     document.getElementById('backBtn').onclick = () => {
       clearInterval(timerInterval);
+      saveGame();
       document.getElementById('game').classList.add('hidden');
       document.getElementById('setup').classList.remove('hidden');
     };
+
+    // Los casos resueltos o revelados siguen guardados hasta confirmar este cierre.
+    // Cancelar conserva la partida; confirmar vuelve al selector y desactiva el guardado.
+    function confirmCloseCase() {
+      if (!puzzle || gameStatus === 'playing') return;
+      const modal = textModal('¿Seguro que quieres cerrar el caso?', [
+        'Se eliminará la partida guardada de este navegador, incluidas sus anotaciones y su historial. Volverás al selector de expedientes.',
+        'Si conservas el código, podrás abrir este mismo caso desde el principio.'
+      ]);
+      modalButton(modal, 'No, conservar el caso', 'cancelCloseCaseBtn', closeTextModal, true);
+      modalButton(modal, 'Sí, cerrar y borrar la partida', 'confirmCloseCaseBtn', () => {
+        try {
+          localStorage.removeItem(SAVE_KEY);
+        } catch {
+          const errorModal = textModal('No se pudo cerrar el caso', [
+            'El navegador no ha permitido eliminar la partida guardada. El caso se conserva; puedes volver a intentarlo.'
+          ]);
+          modalButton(errorModal, 'Volver al caso', 'closeCaseErrorBtn', closeTextModal, true);
+          return;
+        }
+        // Forget the active case before any delayed save, pagehide or visibility event.
+        clearInterval(timerInterval);
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+        clearHold();
+        puzzle = null;
+        savedGame = null;
+        caseCode = '';
+        userNotes = null;
+        userCross = null;
+        userLocked = null;
+        activeSuspect = null;
+        undoStack = [];
+        hintSignature = '';
+        hintStage = 0;
+        cachedHint = null;
+        gameStatus = 'playing';
+        seconds = 0;
+        updateTimerDisplay();
+        closeTextModal();
+        document.getElementById('resumeBtn').classList.add('hidden');
+        document.getElementById('closeCaseBtn').classList.add('hidden');
+        document.getElementById('explainBtn').classList.add('hidden');
+        document.getElementById('game').classList.add('hidden');
+        document.getElementById('setup').classList.remove('hidden');
+        document.getElementById('codeStatus').textContent = '';
+        document.getElementById('board').replaceChildren();
+        document.getElementById('cluesList').replaceChildren();
+        setSaveStatus('Caso cerrado. La partida guardada se ha eliminado.');
+      });
+    }
 
     function showSolvedModal(revealed) {
       const room = puzzle.roomList[puzzle.victimRoom];
@@ -2909,10 +3333,14 @@ function isSuspectFixed(name) {
         La única persona a solas con ${v.pronoun} en ese lugar fue<br>
         <span class="killer-name">${puzzle.killer}</span>.</p>
         <p style="font-size:12px;color:#6a5f47;">Tiempo empleado: ${document.getElementById('timer').textContent}</p>
-        <button class="big-btn" id="closeModalBtn">Cerrar</button>
+        <button class="big-btn secondary" id="solvedExplainBtn">Ver la explicación paso a paso</button>
+        <button class="big-btn" id="solvedCloseCaseBtn">Cerrar caso</button>
+        <button class="big-btn secondary" id="closeModalBtn">Volver al tablero</button>
       </div>
     </div>`;
       document.getElementById('closeModalBtn').onclick = () => { root.innerHTML = ''; markSolvedOnBoard(); };
+      document.getElementById('solvedExplainBtn').onclick = () => { markSolvedOnBoard(); showExplanation(); };
+      document.getElementById('solvedCloseCaseBtn').onclick = confirmCloseCase;
     }
 
 
@@ -3022,6 +3450,8 @@ function isSuspectFixed(name) {
       renderBoard();
       renderClues();
     }
+
+    loadSavedGame();
 
   </script>
 </body>
