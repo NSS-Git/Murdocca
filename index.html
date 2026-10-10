@@ -2997,14 +2997,15 @@
       const list = document.getElementById('cluesList');
       list.innerHTML = '';
 
-      // 1. Agrupar las pistas por personaje
+      // Cada pista se muestra una sola vez, en la tarjeta de su sujeto principal.
       const perPerson = {};
       puzzle.suspects.forEach(s => perPerson[s] = []);
       puzzle.clues.forEach(cl => {
         const subjects = cl.subjects || (cl.subject ? [cl.subject] : []);
         if (subjects.length === 0) return;
-        for (const subject of subjects) {
-          if (perPerson[subject]) perPerson[subject].push(cl.text);
+        const primary = subjects[0];
+        if (perPerson[primary] && !perPerson[primary].includes(cl.text)) {
+          perPerson[primary].push(cl.text);
         }
       });
 
