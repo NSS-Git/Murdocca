@@ -6,6 +6,8 @@ declare
   first_user uuid := gen_random_uuid();
   second_user uuid := gen_random_uuid();
   google_user uuid := gen_random_uuid();
+  pending_user uuid := gen_random_uuid();
+  pending_name text := 'Verificación pendiente ' || pending_user::text;
   first_name text := 'Prueba puntuación ' || first_user::text;
   second_name text := 'Prueba ranking ' || second_user::text;
   google_name text := 'Nombre Google ' || google_user::text;
@@ -38,11 +40,13 @@ begin
     raise exception 'La transición no está reservada a service_role';
   end if;
 
-  insert into auth.users (id, raw_user_meta_data)
+  insert into auth.users (id, raw_user_meta_data, email_confirmed_at)
   values
-    (first_user, jsonb_build_object('display_name', first_name, 'full_name', 'Nombre completo proveedor')),
-    (second_user, jsonb_build_object('name', second_name, 'email', 'privado@example.com')),
-    (google_user, jsonb_build_object('full_name', google_name, 'email', 'google-private@example.com'));
+    (first_user, jsonb_build_object('display_name', first_name, 'full_name', 'Nombre completo proveedor'), now()),
+    (second_user, jsonb_build_object('name', second_name, 'email', 'privado@example.com'), now()),
+    (google_user, jsonb_build_object('full_name', google_name, 'email', 'google-private@example.com'), now()),
+    (pending_user, jsonb_build_object('display_name', pending_name), null);
+  update public.murdocca_profiles set total_points = 9999 where user_id = pending_user;
 
   select display_name into actual_name
     from public.murdocca_profiles where user_id = first_user;
@@ -198,6 +202,28 @@ begin
   select rank into second_rank from public.murdocca_leaderboard() where display_name = second_name;
   if first_rank is null or second_rank is null or first_rank >= second_rank then
     raise exception 'El ranking no ordena según puntos';
+  end if;
+  if exists (select 1 from public.murdocca_leaderboard() where display_name = pending_name) then
+    raise exception 'Una cuenta sin confirmar aparece en el ranking';
+  end if;
+  if not exists (select 1 from public.murdocca_leaderboard() where display_name = google_name) then
+    raise exception 'Una cuenta Google verificada no aparece en el ranking';
+  end if;
+  if exists (
+    select 1 from (
+      select r.total_points, lag(r.total_points) over (order by r.ordinality) as previous_points,
+             r.rank, r.ordinality
+      from public.murdocca_leaderboard() with ordinality as r
+    ) as ordered
+    where ordered.total_points > ordered.previous_points or ordered.rank <> ordered.ordinality
+  ) then
+    raise exception 'Las filas no salen de mayor a menor por puntos o los puestos tienen huecos';
+  end if;
+  execute 'reset role';
+  update auth.users set email_confirmed_at = now() where id = pending_user;
+  execute 'set local role authenticated';
+  if not exists (select 1 from public.murdocca_leaderboard() where display_name = pending_name) then
+    raise exception 'Completar la verificación no incorpora la cuenta al ranking';
   end if;
   begin
     perform public.murdocca_score_transition(first_user, case_code, 'complete', false);
