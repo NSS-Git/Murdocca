@@ -79,7 +79,8 @@
       }
     }
     if (!cells.length) return { error: 'No hay casillas transitables.' };
-    return { p, size, suspects, victimName, names, clues, cells };
+    const rooms = [...new Set(p.roomGrid.flat())];
+    return { p, size, suspects, victimName, names, clues, cells, rooms };
   }
 
   function parseLocks(locks, context) {
@@ -213,7 +214,7 @@
 
 
   function solve(context, locks) {
-    const { p, size, suspects, victimName, names, clues, cells } = context;
+    const { p, size, suspects, victimName, names, clues, cells, rooms } = context;
     const steps = [];
     const domains = names.map(() => cells.slice());
     const personIndex = new Map(names.map((name, index) => [name, index]));
@@ -359,6 +360,31 @@
             return { error: conflict(`${names[i]} no tiene una posición compatible con la regla de que exactamente un sospechoso comparta la sala de la víctima.`, names[i], 'Regla de la sala de la víctima') };
           }
         }
+
+        // La víctima comparte sala con un sospechoso: toda sala necesita uno.
+        for (const room of rooms) {
+          let candidate = -1, possible = 0;
+          for (let i = 0; i < suspectCount; i++) {
+            if (current[i].some(id => p.roomGrid[Math.floor(id / size)][id % size] === room)) {
+              candidate = i;
+              possible++;
+            }
+          }
+          const roomLabel = Array.isArray(p.roomList) && p.roomList[room] ? p.roomList[room] : `la sala ${String(room)}`;
+          if (!possible) {
+            return { error: conflict(`Ningún sospechoso puede ocupar ${roomLabel}; ninguna habitación debe quedar vacía.`, 'Habitaciones', 'Habitaciones ocupadas') };
+          }
+          if (possible === 1) {
+            const before = current[candidate];
+            current[candidate] = before.filter(id => p.roomGrid[Math.floor(id / size)][id % size] === room);
+            if (current[candidate].length !== before.length) {
+              changed = true;
+              if (record) makeStep(steps, names[candidate], 'Habitaciones ocupadas',
+                `${names[candidate]} es el único sospechoso que puede ocupar ${roomLabel}; esa habitación no puede quedar vacía.`,
+                before, current[candidate], size);
+            }
+          }
+        }
       }
       if (changed) {
         return { error: conflict('La propagación alcanzó su límite seguro sin estabilizar los dominios.', 'Motor de deducción') };
@@ -382,6 +408,8 @@
         if (p.roomGrid[Math.floor(id / size)][id % size] === victimRoom) sameRoom++;
       }
       if (sameRoom !== 1) return false;
+      const occupiedRooms = new Set(assigned.map(id => p.roomGrid[Math.floor(id / size)][id % size]));
+      if (rooms.some(room => !occupiedRooms.has(room))) return false;
       const clueDomains = {};
       for (let i = 0; i < suspectCount; i++) {
         clueDomains[suspects[i]] = [[Math.floor(assigned[i] / size), assigned[i] % size]];
@@ -525,7 +553,7 @@
     }
 
     let focus;
-    if (step && step.clue && step.clue !== 'Comprobación exhaustiva de alternativas') {
+    if (step && step.clue && step.clue !== 'Comprobación exhaustiva de alternativas' && step.clue !== 'Regla de filas únicas') {
       focus = `Vuelve a leer la pista «${step.clue}» y comprueba cómo encaja con las reglas de filas, columnas y salas.`;
     } else {
       focus = `Compara las pistas de ${name} con las reglas de filas, columnas y la sala de la víctima.`;
@@ -592,7 +620,10 @@
       const reason = step.reason.startsWith('La casilla no satisface la condición de la pista')
         ? 'Las demás casillas no cumplen esa pista.'
         : step.reason;
-      lines.push(`${step.subject}: «${step.clue}». Quedan ${step.after} de las ${step.before} posibilidades anteriores. ${reason} Se descarta${step.removed.length > 1 ? 'n' : ''}, por ejemplo: ${sample}.${remaining}`);
+      const clueLabel = step.clue === 'Comprobación exhaustiva de alternativas' || step.clue === 'Regla de filas únicas'
+        ? ''
+        : `«${step.clue}». `;
+      lines.push(`${step.subject}: ${clueLabel}Quedan ${step.after} de las ${step.before} posibilidades anteriores. ${reason} Se descarta${step.removed.length > 1 ? 'n' : ''}, por ejemplo: ${sample}.${remaining}`);
     }
 
     if (!result.proofComplete) {
@@ -634,6 +665,7 @@
     const roomName = Array.isArray(p.roomList) ? p.roomList[victimRoom] : null;
     const roomLabel = typeof roomName === 'string' && roomName ? roomName : `la sala ${String(victimRoom)}`;
     lines.push(`Como hay una persona por fila y columna, la única fila libre (${freeRows[0] + 1}) y la única columna libre (${freeCols[0] + 1}) fijan a ${victimName} en su intersección, ${cellText(victimCell[0] * size + victimCell[1], size)}.`);
+    lines.push('Ninguna habitación queda vacía: la colocación final incluye al menos un personaje en cada sala.');
 
     const together = suspects.filter(name => {
       const [r, c] = positions.get(name);

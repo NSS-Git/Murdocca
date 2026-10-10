@@ -24,6 +24,25 @@ function checkCase(p) {
   assert.ok(p, 'La generación debe producir un caso');
   assert.equal(p.suspects.includes(p.victim.name), false);
   assert.ok(p.suspects.includes(p.killer));
+  assert.equal(p.size, p.diff.size, 'La regla no debe aumentar el tablero');
+  assert.equal(p.suspects.length, p.diff.n, 'La regla no debe aumentar el reparto');
+  const occupiedRooms = new Set(Object.values(p.solution).map(({ r, c }) => p.roomGrid[r][c]));
+  occupiedRooms.add(p.roomGrid[p.victimCell.r][p.victimCell.c]);
+  assert.deepEqual([...occupiedRooms].sort(), Array.from(p.roomList, (_, i) => i).sort(), 'No puede quedar ninguna habitación vacía');
+  const general = p.clues.filter(clue => clue.type === 'general');
+  assert.equal(general.length, 1, 'Cada expediente debe incluir exactamente una pista general');
+  assert.equal(general[0].subject, undefined);
+  assert.equal(general[0].subjects, undefined);
+  const allCells = [];
+  for (let r = 0; r < p.size; r++) for (let c = 0; c < p.size; c++) {
+    if (!p.obstacle[r][c]) allCells.push([r, c]);
+  }
+  const generalDomains = Object.fromEntries(p.suspects.map(name => [name, allCells.slice()]));
+  general[0].apply(generalDomains);
+  for (const name of p.suspects) {
+    assert.ok(generalDomains[name].length < allCells.length, 'La pista general debe descartar casillas para todos');
+    assert.ok(generalDomains[name].some(([r, c]) => r === p.solution[name].r && c === p.solution[name].c));
+  }
   const truth = Object.fromEntries(p.suspects.map(name => [name, [[p.solution[name].r, p.solution[name].c]]]));
   for (const clue of p.clues) {
     const domains = structuredClone(truth);
@@ -67,5 +86,7 @@ test('un código reproduce el caso y rechaza la versión anterior sin reinterpre
   const second = context.generate(spec.mapId, spec.diffId, spec.seed);
   const visible = p => JSON.stringify({ victim: p.victim, suspects: p.suspects, solution: p.solution, victimCell: p.victimCell, clues: p.clues.map(c => c.text), rooms: p.roomGrid, obstacle: p.obstacle, feature: p.feature });
   assert.equal(visible(first), visible(second));
-  assert.throws(() => cases.decode(code.replace('MD2-', 'MD1-')), /no es compatible/);
+  for (const version of ['MD1', 'MD2', 'MD3']) {
+    assert.throws(() => cases.decode(code.replace('MD4-', `${version}-`)), /no es compatible/);
+  }
 });

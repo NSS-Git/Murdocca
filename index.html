@@ -1095,7 +1095,7 @@
 
       <div class="section-title" style="margin-top:20px;">Reparto</div>
       <div class="roster" id="roster"></div>
-      <p class="case-status">Cualquier personaje puede ser la víctima o el culpable. Hay una persona por fila y columna; el culpable es el único sospechoso en la habitación de la víctima.</p>
+      <p class="case-status">Cualquier personaje puede ser la víctima o el culpable. Hay una persona por fila y columna y ninguna habitación debe quedar vacía. El culpable es el único sospechoso en la habitación de la víctima. Los niveles iniciales usan menos habitaciones para mantener el tamaño del tablero.</p>
 
       <button class="big-btn" id="startBtn" disabled>▸ ABRIR EXPEDIENTE</button>
       <div class="case-controls">
@@ -1103,7 +1103,7 @@
         <label for="caseCodeInput">Abrir expediente con un código</label>
         <input id="caseCodeInput" autocomplete="off" spellcheck="false" placeholder="Pega el código del caso">
         <button class="big-btn secondary" id="openCodeBtn">Abrir expediente con un código</button>
-        <p class="case-status">Los nuevos expedientes usan códigos MD2: reparto variable y solución verificada con el motor de pistas. Los códigos y partidas MD1 no son compatibles; no se convierten para evitar cambiar el caso original.</p>
+        <p class="case-status">Cada expediente incluye una pista general que se aplica a todos los sospechosos, además de las pistas individuales. Los nuevos códigos usan MD4 y garantizan habitaciones ocupadas. Los códigos y partidas MD1, MD2 y MD3 no son compatibles; no se convierten para evitar cambiar el caso original.</p>
         <div class="case-status" id="codeStatus" role="status"></div>
       </div>
     </div>
@@ -1152,6 +1152,7 @@
           · Para fijar la posición definitiva: mantenla pulsada 
           · Para desfijar la posición definitiva: mantenla pulsada habiendo seleccionado previamente ese mismo personaje </div>
         <div class="hint-text" id="locationRule"></div>
+        <div class="hint-text">Ninguna habitación debe quedar vacía: todas deben contener al menos un personaje.</div>
         <p class="case-status" id="gameSaveStatus" role="status"></p>
         <div id="feedback"></div>
         <div class="actions-row case-actions">
@@ -1182,8 +1183,8 @@
 
   <div id="modalRoot"></div>
 
-  <script src="./case-tools.js?v=MD2"></script>
-  <script src="./deduction-tools.js?v=MD2"></script>
+  <script src="./case-tools.js?v=MD4"></script>
+  <script src="./deduction-tools.js?v=MD4"></script>
   <script>
     /* =========================================================================
        DATA
@@ -1551,12 +1552,13 @@
       const victim = nextVictim();
       const suspects = shuffle(SUSPECTS.filter(name => name !== victim.name)).slice(0, N);
 
-      // Extraer nombres de salas
-      const roomNames = mapDef.rooms.map(r => typeof r === 'string' ? r : r.name);
+      // Víctima y culpable comparten sala: como máximo hay N salas ocupadas.
+      const caseRooms = mapDef.rooms.length > N ? shuffle(mapDef.rooms).slice(0, N) : mapDef.rooms;
+      const roomNames = caseRooms.map(r => typeof r === 'string' ? r : r.name);
       const { roomGrid, roomList, roomRects } = buildRooms(size, roomNames);
 
       // Auxiliares para consultar objetos/rasgos de la sala según la casilla
-      const getRoomObj = (rIdx) => mapDef.rooms[rIdx % mapDef.rooms.length];
+      const getRoomObj = (rIdx) => caseRooms[rIdx];
       const getRoomObsList = (rIdx) => {
         const room = getRoomObj(rIdx);
         return (room && room.obstacles) ? room.obstacles : (mapDef.obstacles || []);
@@ -1570,9 +1572,9 @@
       const GUARANTEED_OBS = ["👧🏽 la niña mala", "👩🏻 Maite", "🛎️ mostrador de recepción", "✂ tijeras (de D.C)", "🦽 barbie negra", "🦕 Stifen", "👱🏻‍♀️ Ana", "🎃 manta de stranger things", "✂ las tijeras (de D.C)"];
       const GUARANTEED_FEAT = ["📋 despido de maite", "🖼️ póster de Gongo", "🔬 microscopio del señor Moles", "📷 la polaroid", "👽 el smiski", "🦯 el látigo del señor Moles"];
 
-      // Recopilar todos los obstáculos y rasgos disponibles en ESTE mapa
-      const allMapObstacles = [...new Set(mapDef.rooms.flatMap(r => typeof r === 'object' && r.obstacles ? r.obstacles : (mapDef.obstacles || [])))];
-      const allMapFeatures = [...new Set(mapDef.rooms.flatMap(r => typeof r === 'object' && r.features ? r.features : (mapDef.features || [])))];
+      // Solo se colocan objetos de las habitaciones presentes en este expediente.
+      const allMapObstacles = [...new Set(caseRooms.flatMap(r => typeof r === 'object' && r.obstacles ? r.obstacles : (mapDef.obstacles || [])))];
+      const allMapFeatures = [...new Set(caseRooms.flatMap(r => typeof r === 'object' && r.features ? r.features : (mapDef.features || [])))];
 
       const usedUniqueObs = new Set();
       const usedUniqueFeat = new Set();
@@ -1713,19 +1715,46 @@
       const colsAvail = shuffle([...Array(size).keys()]);
       const solution = {}; // suspect -> {r,c}
       const usedRows = new Set(), usedCols = new Set();
+      const roomCounts = Array(roomList.length).fill(0);
+      let occupiedRooms = 0, assignmentNodes = 0;
 
       function backtrack(i) {
-        if (i >= suspects.length) return true;
+        if (++assignmentNodes > 20000) return false;
+        const remaining = suspects.length - i;
+        if (roomList.length - occupiedRooms > remaining) return false;
+        if (!remaining) {
+          const r = rowsAvail.find(row => !usedRows.has(row));
+          const c = colsAvail.find(col => !usedCols.has(col));
+          return !obstacle[r][c] && roomCounts[roomGrid[r][c]] === 1;
+        }
+        // Una sala sin casillas compatibles no podrá recibir ningún personaje.
+        for (let room = 0; room < roomCounts.length; room++) {
+          if (roomCounts[room]) continue;
+          let possible = false;
+          for (const r of rowsAvail) {
+            if (usedRows.has(r)) continue;
+            if (colsAvail.some(c => !usedCols.has(c) && !obstacle[r][c] && roomGrid[r][c] === room)) {
+              possible = true;
+              break;
+            }
+          }
+          if (!possible) return false;
+        }
         const s = suspects[i];
         const rowsShuffled = shuffle(rowsAvail.filter(r => !usedRows.has(r)));
         for (const r of rowsShuffled) {
           const colsShuffled = shuffle(colsAvail.filter(c => !usedCols.has(c)));
           for (const c of colsShuffled) {
             if (obstacle[r][c]) continue;
+            const room = roomGrid[r][c];
+            if (remaining === roomList.length - occupiedRooms && roomCounts[room]) continue;
+            if (roomCounts[room]++ === 0) occupiedRooms++;
             usedRows.add(r); usedCols.add(c);
             solution[s] = { r, c };
             if (backtrack(i + 1)) return true;
             usedRows.delete(r); usedCols.delete(c); delete solution[s];
+            if (--roomCounts[room] === 0) occupiedRooms--;
+            if (assignmentNodes > 20000) return false;
           }
         }
         return false;
@@ -1932,6 +1961,34 @@
       const allCells = [];
       for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (!p.obstacle[r][c]) allCells.push([r, c]);
 
+      // Una pista del escenario restringe a todos los sospechosos, sin nombrar a ninguno.
+      const occupied = new Set(suspects.map(s => solution[s].r * size + solution[s].c));
+      const generalOptions = [];
+      for (const [r, c] of allCells) {
+        const f = feature[r][c], room = roomGrid[r][c];
+        if (!f) continue;
+        const cells = allCells.filter(([sr, sc]) => feature[sr][sc] === f && roomGrid[sr][sc] === room);
+        const text = `Ningún sospechoso ocupaba una casilla con ${f.replace(/^\S+\s/, '')} en ${roomList[room]}.`;
+        if (cells.every(([sr, sc]) => !occupied.has(sr * size + sc)) &&
+            !generalOptions.some(option => option.text === text)) generalOptions.push({ text, cells });
+      }
+      if (!generalOptions.length) {
+        for (const [r, c] of allCells) {
+          if (!occupied.has(r * size + c)) {
+            generalOptions.push({ text: `Ningún sospechoso estaba en la fila ${r + 1}, columna ${c + 1}.`, cells: [[r, c]] });
+          }
+        }
+      }
+      const generalOption = generalOptions[rnd(generalOptions.length)];
+      const excluded = new Set(generalOption.cells.map(([r, c]) => r * size + c));
+      const generalClue = {
+        type: 'general',
+        text: generalOption.text,
+        apply(dom) {
+          for (const s of suspects) dom[s] = dom[s].filter(([r, c]) => !excluded.has(r * size + c));
+        }
+      };
+
       function propagate(dom, activeClues) {
         let changed = true, guard = 0;
         while (changed && guard < 50) {
@@ -1977,6 +2034,11 @@
             const c = Array.from({ length: size }, (_, i) => i).find(i => !usedC.has(i));
             if (p.obstacle[r][c]) return;
             const victimRoom = roomGrid[r][c];
+            const occupiedRooms = new Set(suspects.map(s => {
+              const [sr, sc] = current[s][0];
+              return roomGrid[sr][sc];
+            }));
+            if (occupiedRooms.size !== roomList.length) return;
             if (suspects.filter(s => {
               const [sr, sc] = current[s][0];
               return roomGrid[sr][sc] === victimRoom;
@@ -1998,7 +2060,8 @@
       let domain = {};
       suspects.forEach(s => domain[s] = [...allCells]);
 
-      const chosen = [];
+      const chosen = [generalClue];
+      propagate(domain, chosen);
       let solved = false;
 
       // Solo Muy fácil admite una coordenada completa explícita.
@@ -2055,6 +2118,7 @@
       }
       let working = [...chosen];
       for (let i = working.length - 1; diff.minimize && i >= 0; i--) {
+        if (working[i].type === 'general') continue;
         const candidate = working.slice(0, i).concat(working.slice(i + 1));
         if (!hasSceneClues(candidate)) continue;
         const dom = domainsFromClues(candidate);
@@ -2276,7 +2340,7 @@
     function showShareModal() {
       const modal = textModal('El mismo expediente para todas', [
         'Comparte este código. Al abrirlo se generan el mismo plano, los mismos personajes y las mismas pistas, sin compartir tus anotaciones ni tu solución.',
-        'Debe abrirse en esta misma versión de Murdocca (MD2). Los expedientes MD1 no son compatibles con el nuevo reparto y sistema de pistas.'
+        'Debe abrirse en esta misma versión de Murdocca (MD4). Los expedientes anteriores no son compatibles con la regla de habitaciones ocupadas.'
       ]);
       const input = document.createElement('input');
       input.id = 'shareCode';
@@ -2997,6 +3061,26 @@
       const list = document.getElementById('cluesList');
       list.innerHTML = '';
 
+      const generalClues = puzzle.clues.filter(cl => cl.type === 'general');
+      if (generalClues.length) {
+        const card = document.createElement('div');
+        card.className = 'clue-card general-clue-card';
+        const heading = document.createElement('div');
+        heading.className = 'card-name';
+        heading.textContent = 'Pista general';
+        card.appendChild(heading);
+        const lines = document.createElement('div');
+        lines.className = 'clue-lines';
+        for (const text of new Set(generalClues.map(cl => cl.text))) {
+          const line = document.createElement('div');
+          line.className = 'clue-line';
+          line.textContent = text;
+          lines.appendChild(line);
+        }
+        card.appendChild(lines);
+        list.appendChild(card);
+      }
+
       // Cada pista se muestra una sola vez, en la tarjeta de su sujeto principal.
       const perPerson = {};
       puzzle.suspects.forEach(s => perPerson[s] = []);
@@ -3016,7 +3100,7 @@
 
         const isActive = activeSuspect === name;
 
-        d.className = 'clue-card' + (isActive ? ' active' : '');
+        d.className = 'clue-card' + (isActive ? ' active' : '') + (isSuspectFixed(name) ? ' clue-disabled' : '');
 
         const header = document.createElement('div');
         header.className = 'card-header';

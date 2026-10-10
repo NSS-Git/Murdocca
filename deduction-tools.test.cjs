@@ -8,8 +8,8 @@ function smallCase() {
     suspects: ['Clara', 'Jose'],
     victim: { name: 'Mocca' },
     obstacle: Array.from({ length: 3 }, () => Array(3).fill(null)),
-    roomGrid: [[0, 0, 1], [2, 2, 1], [0, 0, 0]],
-    roomList: ['la sala de juntas', 'el baño', 'la recepción'],
+    roomGrid: [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
+    roomList: ['la sala de juntas', 'el baño'],
     clues: [
       { subject: 'Clara', type: 'exact', text: 'Clara estuvo en la fila 1, columna 1.',
         apply(dom) { dom.Clara = dom.Clara.filter(([r, c]) => r === 0 && c === 0); } },
@@ -52,4 +52,42 @@ test('un bloqueo sobre un obstáculo se rechaza antes de deducir', () => {
   p.obstacle[2][0] = 'un armario';
   const result = MurdoccaDeduction.analyze(p, [['2,0', 'Mocca']]);
   assert.equal(result.status, 'contradiction');
+});
+
+test('un tablero completo que deja una habitación vacía se rechaza', () => {
+  const p = smallCase();
+  p.roomGrid[0][2] = 2;
+  p.roomList.push('la recepción');
+  const result = MurdoccaDeduction.analyze(p, [
+    ['0,0', 'Clara'], ['1,1', 'Jose'], ['2,2', 'Mocca']
+  ]);
+  assert.equal(result.status, 'contradiction');
+  assert.equal(result.hint, null);
+  assert.equal(result.proofComplete, true);
+});
+
+test('la única persona que puede ocupar una habitación debe quedar en ella', () => {
+  const p = {
+    size: 4,
+    suspects: ['Clara', 'Jose', 'Nono'],
+    victim: { name: 'Mocca' },
+    obstacle: Array.from({ length: 4 }, () => Array(4).fill(null)),
+    roomGrid: [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 2, 0], [0, 0, 0, 0]],
+    roomList: ['la recepción', 'el baño', 'el almacén'],
+    clues: [
+      { text: 'Clara estuvo en la fila 1, columna 1.',
+        apply(dom) { dom.Clara = dom.Clara.filter(([r, c]) => r === 0 && c === 0); } },
+      { text: 'Jose estuvo en la fila 2, en una de las columnas centrales.',
+        apply(dom) { dom.Jose = dom.Jose.filter(([r, c]) => r === 1 && (c === 1 || c === 2)); } },
+      { text: 'Nono estuvo en la fila 3, en una de las columnas centrales.',
+        apply(dom) { dom.Nono = dom.Nono.filter(([r, c]) => r === 2 && (c === 1 || c === 2)); } }
+    ]
+  };
+  const result = MurdoccaDeduction.analyze(p);
+  assert.equal(result.status, 'ok');
+  assert.equal(result.proofComplete, true);
+  assert.deepEqual(result.domains.Nono, [[2, 2]]);
+  assert.deepEqual(result.domains.Jose, [[1, 1]]);
+  const conflicting = MurdoccaDeduction.analyze(p, [['2,1', 'Nono']]);
+  assert.equal(conflicting.status, 'contradiction');
 });

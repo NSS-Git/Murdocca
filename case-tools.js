@@ -1,7 +1,7 @@
 (function (root) {
   "use strict";
 
-  // MD2 fija el algoritmo, los datos del escenario y el orden de generación.
+  // MD4 fija el algoritmo, los datos del escenario y el orden de generación.
   // Si cambia alguno de ellos, publicar otra versión de código para no reinterpretar
   // los expedientes compartidos y las partidas guardadas como un caso diferente.
 
@@ -61,7 +61,7 @@
     const map = normalizeId(mapId, MAP_IDS, "mapa");
     const difficulty = normalizeId(diffId, DIFFICULTY_IDS, "dificultad");
     const seedHex = validateSeed(seed).toString(16).toUpperCase().padStart(8, "0");
-    const payload = `MD2-${map.toUpperCase()}-${difficulty.toUpperCase()}-${seedHex}`;
+    const payload = `MD4-${map.toUpperCase()}-${difficulty.toUpperCase()}-${seedHex}`;
     return `${payload}-${checksum(payload)}`;
   }
 
@@ -71,12 +71,12 @@
     }
 
     const parts = code.toUpperCase().split("-");
-    if (/^MD\d+$/.test(parts[0]) && parts[0] !== "MD2") {
+    if (/^MD\d+$/.test(parts[0]) && parts[0] !== "MD4") {
       throw new Error(`La versión ${parts[0]} del código no es compatible.`);
     }
     if (
       parts.length !== 5 ||
-      parts[0] !== "MD2" ||
+      parts[0] !== "MD4" ||
       !/^[A-Z][A-Z0-9_]*$/.test(parts[1] || "") ||
       !/^[A-Z][A-Z0-9_]*$/.test(parts[2] || "") ||
       !/^[0-9A-F]{8}$/.test(parts[3] || "") ||
