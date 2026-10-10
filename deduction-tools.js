@@ -47,9 +47,8 @@
 
     const size = p.size;
     const suspects = p.suspects.slice();
-    const victimName = p.victim && typeof p.victim.name === 'string' && p.victim.name
-      ? p.victim.name
-      : 'Mocca';
+    const victimName = p.victim && typeof p.victim.name === 'string' && p.victim.name;
+    if (!victimName) return { error: 'El caso debe identificar a su víctima.' };
     const names = suspects.concat(victimName);
     if (size !== names.length || suspects.some(name => typeof name !== 'string' || !name) ||
         new Set(names).size !== names.length) {

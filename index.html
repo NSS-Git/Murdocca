@@ -1095,6 +1095,7 @@
 
       <div class="section-title" style="margin-top:20px;">Reparto</div>
       <div class="roster" id="roster"></div>
+      <p class="case-status">Cualquier personaje puede ser la víctima o el culpable. Hay una persona por fila y columna; el culpable es el único sospechoso en la habitación de la víctima.</p>
 
       <button class="big-btn" id="startBtn" disabled>▸ ABRIR EXPEDIENTE</button>
       <div class="case-controls">
@@ -1102,6 +1103,7 @@
         <label for="caseCodeInput">Abrir expediente con un código</label>
         <input id="caseCodeInput" autocomplete="off" spellcheck="false" placeholder="Pega el código del caso">
         <button class="big-btn secondary" id="openCodeBtn">Abrir expediente con un código</button>
+        <p class="case-status">Los nuevos expedientes usan códigos MD2: reparto variable y solución verificada con el motor de pistas. Los códigos y partidas MD1 no son compatibles; no se convierten para evitar cambiar el caso original.</p>
         <div class="case-status" id="codeStatus" role="status"></div>
       </div>
     </div>
@@ -1180,17 +1182,17 @@
 
   <div id="modalRoot"></div>
 
-  <script src="./case-tools.js"></script>
-  <script src="./deduction-tools.js"></script>
+  <script src="./case-tools.js?v=MD2"></script>
+  <script src="./deduction-tools.js?v=MD2"></script>
   <script>
     /* =========================================================================
        DATA
        ========================================================================= */
 
-    const SUSPECTS = ["Clara", "Nono", "Gema", "María", "Victoria", "Inma", "Raquel", "Alicia", "Cris", "Mario", "Jose"];
+    const SUSPECTS = ["Clara", "Nono", "Gema", "María", "Victoria", "Inma", "Raquel", "Alicia", "Cris", "Mario", "Jose", "Mocca"];
     const SUSPECT_CODES = {
       "Gema": "GE", "María": "MA", "Victoria": "VI", "Nono": "NO", "Inma": "IN",
-      "Raquel": "RA", "Alicia": "AL", "Cris": "CR", "Mario": "MR", "Jose": "JO", "Clara": "CL"
+      "Raquel": "RA", "Alicia": "AL", "Cris": "CR", "Mario": "MR", "Jose": "JO", "Clara": "CL", "Mocca": "MO"
     };
     const SUSPECT_COLORS = {
       "Clara": "#5c7a8a",
@@ -1203,13 +1205,13 @@
       "Alicia": "#184478",
       "Cris": "#bd5b3d",
       "Mario": "#d29a43",
-      "Jose": "#bf928d"
+      "Jose": "#bf928d",
+      "Mocca": "#3c5c5c"
     };
-    const VICTIMS = [
-      { id: "mocca", name: "Mocca", emoji: "🐾", found: "hallada", pronoun: "ella" }
-    ];
     function nextVictim() {
-      return VICTIMS[0];
+      const name = SUSPECTS[rnd(SUSPECTS.length)];
+      const female = ["Clara", "Gema", "María", "Victoria", "Inma", "Raquel", "Alicia", "Mocca"].includes(name);
+      return { name, emoji: name === "Mocca" ? "🐾" : "†", found: female ? "hallada" : "hallado", pronoun: female ? "ella" : "él" };
     }
     function personLabel(name) {
       if (puzzle && puzzle.victim && name === puzzle.victim.name) return puzzle.victim.emoji;
@@ -1260,7 +1262,7 @@
 
     // Referencia: https://murdoku.com/play/ (Muy fácil, Fácil, Medio, Difícil, Experto).
     // Adaptación procedural, no una reproducción de sus casos ni de su calibración:
-    // size = n + 1 reserva un eje para Mocca; Experto utiliza los 11 sospechosos.
+    // size = n + 1 reserva un eje para la víctima; Experto utiliza todo el reparto.
     const DIFFICULTIES = [
       { id: "muy_facil", name: "Muy fácil", n: 4, size: 5, types: ["exact", "room", "feature", "beside", "row_only", "col_only"], maxExact: 1, minimize: false, relational: false },
       { id: "facil", name: "Fácil", n: 5, size: 6, types: ["room", "feature", "beside", "row_only", "col_only", "half"], maxExact: 0, minimize: false, relational: false },
@@ -1347,17 +1349,6 @@
       roster.appendChild(chip);
     });
 
-    // Renderizar víctimas (convertidas en botones interactivos)
-    VICTIMS.forEach(v => {
-      const name = typeof v === 'object' ? v.name : v;
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'chip victim-chip';
-      chip.textContent = name;
-      chip.style.cursor = 'pointer';
-      chip.onclick = () => showCharacterModal(name, 'VÍCTIMA');
-      roster.appendChild(chip);
-    });
 
     function showCharacterModal(name, roleType = 'SOSPECHOSO') {
       const modalRoot = document.getElementById('modalRoot');
@@ -1557,7 +1548,8 @@
     function tryGenerate(mapDef, diff) {
       const size = diff.size;
       const N = diff.n;
-      const suspects = shuffle(SUSPECTS).slice(0, N);
+      const victim = nextVictim();
+      const suspects = shuffle(SUSPECTS.filter(name => name !== victim.name)).slice(0, N);
 
       // Extraer nombres de salas
       const roomNames = mapDef.rooms.map(r => typeof r === 'string' ? r : r.name);
@@ -1757,7 +1749,7 @@
 
       const killer = sharing[0];
 
-      return { mapDef, diff, size, suspects, roomGrid, roomList, roomRects, obstacle, feature, solution, victimCell, victimRoom, killer };
+      return { mapDef, diff, size, suspects, victim, roomGrid, roomList, roomRects, obstacle, feature, solution, victimCell, victimRoom, killer };
     }
 
     function generatePuzzle(mapDef, diff) {
@@ -1765,7 +1757,13 @@
         const p = tryGenerate(mapDef, diff);
         if (p) {
           p.clues = generateClues(p, diff);
-          if (p.clues) return p;
+          if (!p.clues) continue;
+          // El mismo motor que da ayudas debe demostrar la solución completa.
+          const proof = MurdoccaDeduction.analyze(p);
+          const positions = { ...p.solution, [p.victim.name]: p.victimCell };
+          if (proof.proofComplete && Object.entries(positions).every(([name, cell]) =>
+            proof.domains[name]?.length === 1 &&
+            proof.domains[name][0][0] === cell.r && proof.domains[name][0][1] === cell.c)) return p;
         }
       }
       return null;
@@ -1829,7 +1827,7 @@
         pool.push({
           type: 'half',
           subject: s,
-          text: `${s} estuvo en la mitad ${isNorth ? 'norte' : 'sur'}.`,
+          text: `${s} estuvo en la zona ${isNorth ? 'norte' : 'sur'} (filas ${isNorth ? `1–${mid}` : `${mid + 1}–${size}`}).`,
           apply: (dom) => {
             dom[s] = dom[s].filter(([r, c]) => isNorth ? r < mid : r >= mid);
           }
@@ -1839,7 +1837,7 @@
         pool.push({
           type: 'half',
           subject: s,
-          text: `${s} estuvo en la mitad ${isWest ? 'oeste' : 'este'}.`,
+          text: `${s} estuvo en la zona ${isWest ? 'oeste' : 'este'} (columnas ${isWest ? `1–${mid}` : `${mid + 1}–${size}`}).`,
           apply: (dom) => {
             dom[s] = dom[s].filter(([r, c]) => isWest ? c < mid : c >= mid);
           }
@@ -1856,9 +1854,7 @@
 
           const cleanObs = obs.replace(/^\S+\s/, '');
           const objectReference = cleanObs.startsWith('el ') ? `al ${cleanObs.slice(3)}` : `a ${cleanObs}`;
-          const besideText = isCommonItem(obs)
-            ? `${s} estaba junto ${objectReference} en ${roomList[room]}.`
-            : `${s} estaba junto ${objectReference}.`;
+          const besideText = `${s} estaba junto ${objectReference} en ${roomList[room]}.`;
 
           pool.push({
             type: 'beside',
@@ -2083,7 +2079,6 @@
       try {
         const p = generatePuzzle(map, diff);
         if (!p) throw new Error('No se pudo generar este expediente.');
-        p.victim = nextVictim();
         p.roomCodes = p.roomList.map(computeRoomCode);
         return p;
       } finally {
@@ -2281,7 +2276,7 @@
     function showShareModal() {
       const modal = textModal('El mismo expediente para todas', [
         'Comparte este código. Al abrirlo se generan el mismo plano, los mismos personajes y las mismas pistas, sin compartir tus anotaciones ni tu solución.',
-        'Debe abrirse en esta misma versión de Murdocca.'
+        'Debe abrirse en esta misma versión de Murdocca (MD2). Los expedientes MD1 no son compatibles con el nuevo reparto y sistema de pistas.'
       ]);
       const input = document.createElement('input');
       input.id = 'shareCode';
@@ -2349,7 +2344,7 @@
 
     function confirmReveal() {
       const modal = textModal('¿Revelar el expediente completo?', [
-        'Se colocarán todos los personajes y se mostrará quién estaba a solas con Mocca. La partida quedará marcada como solución revelada.'
+        `Se colocarán todos los personajes y se mostrará quién estaba a solas con ${puzzle.victim.name}. La partida quedará marcada como solución revelada.`
       ]);
       modalButton(modal, 'No, seguir jugando', 'cancelRevealBtn', closeTextModal, true);
       modalButton(modal, 'Sí, revelar solución', 'confirmRevealBtn', () => { closeTextModal(); revealSolution(); });
@@ -3008,8 +3003,9 @@
       puzzle.clues.forEach(cl => {
         const subjects = cl.subjects || (cl.subject ? [cl.subject] : []);
         if (subjects.length === 0) return;
-        const primary = subjects[0];
-        if (perPerson[primary]) perPerson[primary].push(cl.text);
+        for (const subject of subjects) {
+          if (perPerson[subject]) perPerson[subject].push(cl.text);
+        }
       });
 
       // 2. Renderizar primero las tarjetas de todos los sospechosos
@@ -3017,12 +3013,9 @@
         const texts = perPerson[name];
         const d = document.createElement('div');
 
-        // --- CAMBIO AQUÍ: Verificar si el personaje ya está colocado ---
-        const isPlaced = isSuspectFixed(name);
         const isActive = activeSuspect === name;
 
-        // Se añade la clase 'clue-disabled' si ya está colocado
-        d.className = 'clue-card' + (isActive ? ' active' : '') + (isPlaced ? ' clue-disabled' : '');
+        d.className = 'clue-card' + (isActive ? ' active' : '');
 
         const header = document.createElement('div');
         header.className = 'card-header';
@@ -3332,6 +3325,7 @@ function isSuspectFixed(name) {
         <p>${v.name} fue ${v.found} en <strong>${room}</strong>.<br>
         La única persona a solas con ${v.pronoun} en ese lugar fue<br>
         <span class="killer-name">${puzzle.killer}</span>.</p>
+        ${puzzle.killer === 'Mocca' ? `<p>Mocca acabó con ${v.name} a base de mordisquitos.</p>` : ''}
         <p style="font-size:12px;color:#6a5f47;">Tiempo empleado: ${document.getElementById('timer').textContent}</p>
         <button class="big-btn secondary" id="solvedExplainBtn">Ver la explicación paso a paso</button>
         <button class="big-btn" id="solvedCloseCaseBtn">Cerrar caso</button>
