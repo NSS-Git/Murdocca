@@ -1,24 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
+require('./case-tools.js');
+require('./deduction-tools.js');
+require('./puzzle-tools.js');
 
-const context = vm.createContext({});
-for (const file of ['case-tools.js', 'deduction-tools.js']) {
-  vm.runInContext(fs.readFileSync(`${__dirname}/${file}`, 'utf8'), context);
-}
-const html = fs.readFileSync(`${__dirname}/index.html`, 'utf8');
-function section(start, end) {
-  const from = html.indexOf(start);
-  const to = html.indexOf(end, from);
-  assert.ok(from >= 0 && to > from, 'No se encontró el generador del juego');
-  return html.slice(from, to);
-}
-vm.runInContext(
-  section('const SUSPECTS =', 'const ROOM_COLORS =') +
-  'let caseRandom;\n' + section('function shuffle(arr)', '/* =========================================================================\n       GAME START / RENDER') +
-  '\nglobalThis.generate = (map, diff, seed) => { caseRandom = MurdoccaCases.createRandom(seed); return generatePuzzle(MAPS.find(m => m.id === map), DIFFICULTIES.find(d => d.id === diff)); };' +
-  '\nglobalThis.characters = SUSPECTS;', context);
+const context = {
+  generate(map, diff, seed) {
+    return MurdoccaPuzzle.generateCase(MurdoccaCases.encode(map, diff, seed));
+  },
+  characters: MurdoccaPuzzle.SUSPECTS,
+  MurdoccaCases,
+  MurdoccaDeduction
+};
 
 function checkCase(p) {
   assert.ok(p, 'La generación debe producir un caso');

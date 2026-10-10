@@ -1,0 +1,415 @@
+/* Account, authentication gate and ranking panel. Colors follow Murdocca's paper/teal palette. */
+#accountRoot.mc-account-root {
+  position: relative;
+  margin: 0 0 16px;
+  color: var(--text-dark, #2a2416);
+  font-family: 'Libre Franklin', Arial, sans-serif;
+}
+
+.mc-account-root *,
+.mc-account-root *::before,
+.mc-account-root *::after {
+  box-sizing: border-box;
+}
+
+.mc-accountbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--paper-line, #c9bd9e);
+  border-left: 4px solid var(--teal, #3c5c5c);
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0, 0, 0, .035) 28px),
+    var(--paper, #ece4d1);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .2);
+}
+
+.mc-account-identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mc-account-name {
+  color: var(--teal, #3c5c5c);
+  font-family: 'Special Elite', Georgia, serif;
+  font-size: 15px;
+  letter-spacing: .025em;
+  overflow-wrap: anywhere;
+}
+
+.mc-account-details {
+  color: #625b49;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mc-account-controls,
+.mc-ranking-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mc-button,
+.mc-link-button {
+  min-height: 40px;
+  border: 1px solid var(--teal, #3c5c5c);
+  border-radius: 5px;
+  padding: 9px 13px;
+  color: #fff;
+  background: var(--teal, #3c5c5c);
+  box-shadow: 0 2px 0 #2a4444;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: filter .12s ease, transform .12s ease;
+}
+
+.mc-button:hover,
+.mc-link-button:hover {
+  filter: brightness(1.12);
+}
+
+.mc-button:active,
+.mc-link-button:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.mc-button:focus-visible,
+.mc-link-button:focus-visible,
+.mc-auth-form input:focus-visible {
+  outline: 3px solid #d0a75f;
+  outline-offset: 2px;
+}
+
+.mc-button:disabled {
+  opacity: .58;
+  cursor: wait;
+}
+
+.mc-button-secondary {
+  border-color: var(--blood-dark, #6e1c1c);
+  background: var(--blood, #9c2b2b);
+  box-shadow: 0 2px 0 var(--blood-dark, #6e1c1c);
+}
+
+.mc-button-quiet,
+.mc-link-button {
+  border-color: transparent;
+  color: var(--teal, #3c5c5c);
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.mc-link-button {
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.mc-account-status,
+.mc-own-totals,
+.mc-retry-button {
+  margin: 8px 0 0;
+}
+
+.mc-account-status,
+.mc-own-totals {
+  color: var(--text-light, #efe8d8);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mc-account-status[data-kind="error"],
+.mc-account-status[data-kind="warning"] {
+  color: #ffd7ca;
+}
+
+.mc-account-status[data-kind="success"] {
+  color: #cce8c7;
+}
+
+@media (max-width: 780px) {
+  .mc-game-account .mc-account-status {
+    color: var(--text-dark, #2a2416);
+  }
+
+  .mc-game-account .mc-account-status[data-kind="error"],
+  .mc-game-account .mc-account-status[data-kind="warning"] {
+    color: var(--blood-dark, #6e1c1c);
+  }
+
+  .mc-game-account .mc-account-status[data-kind="success"] {
+    color: var(--teal, #3c5c5c);
+  }
+}
+
+.mc-own-totals {
+  color: #e4d2a9;
+}
+
+.mc-retry-button {
+  border-color: #d0a75f;
+  color: #fff;
+  background: #684f27;
+  box-shadow: 0 2px 0 #493716;
+}
+
+.mc-overlay {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  overflow-y: auto;
+  padding: max(18px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+  background: rgba(15, 19, 29, .84);
+  overscroll-behavior: contain;
+}
+
+.mc-overlay[hidden],
+.mc-account-root [hidden] {
+  display: none !important;
+}
+
+.mc-panel {
+  width: min(100%, 490px);
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  padding: clamp(18px, 5vw, 28px);
+  border: 1px solid #bcae8d;
+  border-top: 6px solid var(--teal, #3c5c5c);
+  border-radius: 8px;
+  color: var(--text-dark, #2a2416);
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0, 0, 0, .035) 28px),
+    var(--paper, #ece4d1);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .5);
+  overscroll-behavior: contain;
+}
+
+.mc-gate-panel {
+  border-top-color: var(--blood, #9c2b2b);
+}
+
+.mc-panel-title {
+  margin: 0 0 10px;
+  color: var(--blood-dark, #6e1c1c);
+  font-family: 'Special Elite', Georgia, serif;
+  font-size: clamp(22px, 6vw, 29px);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.mc-panel-copy,
+.mc-guest-note {
+  margin: 9px 0;
+  color: #514a3a;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.mc-guest-note {
+  padding: 10px 12px;
+  border-left: 3px solid var(--teal, #3c5c5c);
+  background: rgba(60, 92, 92, .09);
+}
+
+.mc-feedback {
+  min-height: 0;
+  margin: 8px 0 12px;
+  color: var(--teal, #3c5c5c);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mc-feedback:empty {
+  display: none;
+}
+
+.mc-feedback[data-kind="error"] {
+  color: var(--blood-dark, #6e1c1c);
+  font-weight: 600;
+}
+
+.mc-feedback[data-kind="warning"] {
+  color: #694916;
+}
+
+.mc-feedback[data-kind="success"] {
+  color: #315f3b;
+}
+
+.mc-gate-view > .mc-button,
+.mc-auth-form > .mc-button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.mc-google-choice {
+  display: block;
+  width: 100%;
+  margin: 12px 0 18px;
+  background: var(--paper, #efe8d8);
+  color: var(--text-dark, #2a2416);
+}
+
+.mc-auth-form {
+  display: grid;
+  gap: 11px;
+}
+
+.mc-field {
+  display: grid;
+  gap: 5px;
+}
+
+.mc-field label {
+  color: #3d382d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mc-auth-form input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--paper-line, #c9bd9e);
+  border-radius: 4px;
+  padding: 10px 11px;
+  color: var(--text-dark, #2a2416);
+  background: #fffdf7;
+  font: inherit;
+  font-size: 16px;
+}
+
+.mc-auth-form input:focus {
+  border-color: var(--teal, #3c5c5c);
+}
+
+.mc-ranking-panel {
+  width: min(100%, 680px);
+  border-top-color: var(--brass, #b8935a);
+}
+
+.mc-ranking-panel .mc-panel-title {
+  color: var(--teal, #3c5c5c);
+}
+
+.mc-ranking-totals {
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--paper-line, #c9bd9e);
+  border-left: 4px solid var(--brass, #b8935a);
+  border-radius: 4px;
+  background: var(--paper2, #f5efe0);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.mc-table-wrap {
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  border: 1px solid var(--paper-line, #c9bd9e);
+  border-radius: 4px;
+  background: var(--paper2, #f5efe0);
+  -webkit-overflow-scrolling: touch;
+}
+
+.mc-ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.mc-ranking-table th,
+.mc-ranking-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(105, 92, 64, .22);
+}
+
+.mc-ranking-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: #fff;
+  background: var(--teal, #3c5c5c);
+  font-size: 11px;
+  letter-spacing: .03em;
+}
+
+.mc-ranking-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, .52);
+}
+
+.mc-ranking-table td:first-child,
+.mc-ranking-table td:nth-child(3),
+.mc-ranking-table td:nth-child(4) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-empty-ranking {
+  padding: 18px !important;
+  color: #625b49;
+  text-align: center;
+}
+
+.mc-ranking-controls {
+  margin-top: 14px;
+}
+
+@media (max-width: 520px) {
+  .mc-accountbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mc-account-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mc-account-controls .mc-button {
+    flex: 1 1 auto;
+  }
+
+  .mc-overlay {
+    align-items: end;
+    padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+  }
+
+  .mc-panel {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    border-radius: 8px 8px 4px 4px;
+  }
+
+  .mc-ranking-table th,
+  .mc-ranking-table td {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-button,
+  .mc-link-button {
+    transition: none;
+  }
+}
